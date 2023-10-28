@@ -20,3 +20,18 @@ git-calculator/
 ├── requirements.txt      # Dependencies
 └── setup.py              # Setup
 ```
+
+# Project Usage
+
+```
+cd git-calculator
+export PYTHONPATH=$(pwd)
+```
+
+Set up virtual environment:
+
+```
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
