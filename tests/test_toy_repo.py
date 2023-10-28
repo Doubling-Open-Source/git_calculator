@@ -22,6 +22,7 @@ def temp_directory():
 
 def test_create_git_repo(temp_directory):
     # Call the function to be tested
-    logging.debug('======= temp_directory =======: %s', temp_directory)
+    logging.debug('======= temp_directory =======: \n%s', temp_directory)
     toy_repo.create_git_repo_with_timed_commits(temp_directory)
-    git_util.git_run('log')
+    res = git_util.git_run('log')
+    logging.debug('======= res.stdout =======: \n%s', res.stdout)
