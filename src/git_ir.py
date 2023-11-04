@@ -287,3 +287,10 @@ class get_obj(git_sha):
         elif len(self._parents) == 1:
             par = repr(self._parents[0]) 
         return f"{self!s} {self._type} {par} {auth}"
+    
+
+def all_objects():
+    cmd = git_run('rev-list', '--all', '--objects')
+    res = {git_sha(line.split()[0]): None for line in cmd.stdout.splitlines()}
+    res = list(res.keys())  # Sorted uniq
+    return res

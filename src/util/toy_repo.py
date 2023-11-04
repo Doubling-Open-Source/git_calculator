@@ -4,6 +4,10 @@ import os
 
 def create_git_repo_with_timed_commits(directory_to_create_repo):
 
+    # Ensure that directory_to_create_repo is a string representing a valid directory path
+    if not isinstance(directory_to_create_repo, str) or not os.path.isdir(directory_to_create_repo):
+        raise ValueError("Invalid directory path provided: "+str(directory_to_create_repo))
+
     # Change to the temporary directory provided
     os.chdir(directory_to_create_repo)
 
