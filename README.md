@@ -35,3 +35,6 @@ python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
+
+For debugging:
+```export PYTEST_ADDOPTS="--log-cli-level=DEBUG"```
