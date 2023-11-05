@@ -290,6 +290,20 @@ class get_obj(git_sha):
     
 
 def all_objects():
+    """
+    Retrieve a list of unique Git objects (e.g., commits, blobs, trees) present in the entire Git repository.
+
+    This function uses Git's 'rev-list' command with the '--all' and '--objects' options to list all objects
+    reachable from any branch or reference in the repository. It then processes the output to extract and return
+    a list of unique Git object hashes.
+
+    Returns:
+        list of str: A list containing the unique Git object hashes found in the repository.
+
+    Example:
+        >>> all_objects()
+        ['d1a7f4b29c79a11f08f2cdac7fe13c3d9ec19025', '6a2e78cf73ea38c614f96e8950a245b52ad7fe7c']
+    """
     cmd = git_run('rev-list', '--all', '--objects')
     res = {git_sha(line.split()[0]): None for line in cmd.stdout.splitlines()}
     res = list(res.keys())  # Sorted uniq
