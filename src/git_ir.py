@@ -78,7 +78,7 @@ class git_sha(str):
 
         # The loop continues until there are no duplicates, ensuring all shas are unique with their _show_ state.
 
-class get_obj(git_sha):
+class git_obj(git_sha):
     """
     A class used to represent a Git object, inheriting from base 'git_sha' class.
 
@@ -209,7 +209,7 @@ class get_obj(git_sha):
         line = cmd.stdout.strip()
         parts = line.split('|', 5)
         parts[3] = parts[3].split()  # Multiple parents
-        return get_obj.commit(*parts)
+        return git_obj.commit(*parts)
 
     @classmethod
     def obj(cls, sha):
@@ -307,4 +307,47 @@ def all_objects():
     cmd = git_run('rev-list', '--all', '--objects')
     res = {git_sha(line.split()[0]): None for line in cmd.stdout.splitlines()}
     res = list(res.keys())  # Sorted uniq
+    return res
+
+def git_log():
+    """
+    Retrieve and parse Git commit log entries from the entire Git repository.
+
+    This function uses Git's 'log' command with various options to obtain commit log entries from all branches and
+    reflogs in the repository. It parses each log entry and creates Git commit objects with attributes such as
+    commit timestamp, SHA hash, tree hash, parent commits, author email, and author name.
+
+    After parsing, it links parent-child relationships between commits and calibrates the minimum SHA hash length.
+
+    Returns:
+        list of GitCommit: A list containing parsed Git commit objects representing the commit history.
+
+    Note:
+        The function assumes the availability of the 'git_run', 'git_obj', and 'git_sha' modules for running Git
+        commands, creating Git commit objects, and handling SHA hashes, respectively.
+
+    Example:
+        >>> git_log()
+        [
+            GitCommit(
+                timestamp=1591272869,
+                sha='d1a7f4b29c79a11f08f2cdac7fe13c3d9ec19025',
+                tree_sha='6a2e78cf73ea38c614f96e8950a245b52ad7fe7c',
+                parents=['8d9a6d22dded20b4f6642ac21c64efab8dd9e78b'],
+                author_email='author@example.com',
+                author_name='Author Name'
+            ),
+            ...
+        ]
+    """
+    def to_obj(line):
+        parts = line.split('|', 5)
+        parts[3] = parts[3].split()  # Multiple parents
+        return git_obj.commit(*parts)
+    res = [
+        to_obj(line)
+        for line in git_run('log','--all','--reflog',r'--format=%ct|%H|%T|%P|%ae|%an').stdout.splitlines()
+    ]
+    git_obj.link_children()
+    git_sha.calibrate_min()
     return res
