@@ -3,8 +3,9 @@ import tempfile
 import logging
 import subprocess
 from src.util import toy_repo  
-from src.git_ir import all_objects, get_obj
+from src.git_ir import all_objects, git_obj, git_log
 from src.util.git_util import git_run
+import os
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -34,11 +35,25 @@ def test_all_objects(temp_directory):
     Test the all_objects() method.
     """
     toy_repo.create_git_repo_with_timed_commits(temp_directory)
-    # Call your function
     result = all_objects()
 
+    logging.debug('======= all_objects =======: \n%s', result)
     # Assert that the result is a list
     assert isinstance(result, list)
 
     # Assert that the result is not empty
     assert result
+
+def test_git_log(temp_directory):
+    """
+    Test the git_log() method.
+    """
+    toy_repo.create_git_repo_with_timed_commits(temp_directory)
+    # Change to the temporary directory provided
+    os.chdir(temp_directory)
+    commit_history = git_log()
+    # print the result
+    logging.debug('======= commit_history =======: \n%s', commit_history)
+    # Perform assertions on the result
+    assert isinstance(commit_history, list)
+    assert len(commit_history) > 0

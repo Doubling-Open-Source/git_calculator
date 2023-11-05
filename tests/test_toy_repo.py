@@ -4,6 +4,7 @@ import pytest
 import logging
 from src.util import toy_repo  
 from src.util import git_util
+import os
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -24,5 +25,7 @@ def test_create_git_repo(temp_directory):
     # Call the function to be tested
     logging.debug('======= temp_directory =======: \n%s', temp_directory)
     toy_repo.create_git_repo_with_timed_commits(temp_directory)
+    # Change to the temporary directory provided
+    os.chdir(temp_directory)
     res = git_util.git_run('log')
     logging.debug('======= res.stdout =======: \n%s', res.stdout)
