@@ -6,6 +6,8 @@ import time
 from functools import partial
 from statistics import mean, median, stdev, quantiles
 from io import StringIO
+import os
+from pprint import pprint
 
 quartiles = partial(quantiles, method='inclusive', n=4)
 
@@ -176,7 +178,7 @@ class git_obj(git_sha):
             The newly created 'git_obj' instance with properties extracted from 'git cat-file'.
         """
         cmd = git_run('cat-file','-p', sha)
-        res = get_obj(sha)
+        res = git_obj(sha)
 
         tree = auth = None
         res._parents = []
@@ -233,7 +235,7 @@ class git_obj(git_sha):
         Returns:
         --------
         git_obj
-            The corresponding 'gitobj' instance.
+            The corresponding 'git_obj' instance.
         """
         try:
             return cls.__all_obj__[sha]
@@ -485,7 +487,7 @@ class BranchLine:
             res = '' + n
             return f'"{res[:7]}"'
 
-        print(f"# {gitsha(self.merge)} {len(res)}")
+        print(f"# {git_sha(self.merge)} {len(res)}")
         res.append(f"/* {self.pretty()} */")
         displayed = []
         if not self.commits:
