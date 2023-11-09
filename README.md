@@ -36,5 +36,10 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Run unit tests
+```
+pytest -v
+```
+
 For debugging:
 ```export PYTEST_ADDOPTS="--log-cli-level=DEBUG"```
