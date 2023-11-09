@@ -43,3 +43,17 @@ pytest -v
 
 For debugging:
 ```export PYTEST_ADDOPTS="--log-cli-level=DEBUG"```
+
+To play around with the interpreter:
+```
+python
+from src.util import toy_repo
+toy_repo.create_git_repo_with_timed_commits("/Users/denalilumma/doubling-code/git-calculator/.scratch")
+```
+(Replace with your local path)
+
+```
+from src.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
+result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2)
+print(result)
+```
