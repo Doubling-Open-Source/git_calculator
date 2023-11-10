@@ -2,7 +2,7 @@ import subprocess
 import tempfile
 import pytest
 import logging
-from src.util import toy_repo  
+from src.util.toy_repo import ToyRepoCreator  
 from src.util import git_util
 import os
 
@@ -23,9 +23,10 @@ def temp_directory():
 
 def test_create_git_repo(temp_directory):
     # Call the function to be tested
+    
     logging.debug('======= temp_directory =======: \n%s', temp_directory)
-    toy_repo.create_git_repo_with_timed_commits(temp_directory)
-    # Change to the temporary directory provided
-    os.chdir(temp_directory)
+    trc = ToyRepoCreator(temp_directory)
+    even_intervals = [7 * i for i in range(12)]  # Weekly intervals
+    trc.create_custom_commits(even_intervals)
     res = git_util.git_run('log')
     logging.debug('======= res.stdout =======: \n%s', res.stdout)

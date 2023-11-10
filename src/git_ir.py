@@ -89,33 +89,6 @@ class git_sha(str):
         # The loop continues until there are no duplicates, ensuring all shas are unique with their _show_ state.
 
 class git_obj(git_sha):
-    """
-    A class used to represent a Git object, inheriting from base 'git_sha' class.
-
-    Attributes:
-    -----------
-    __all_obj__ : dict
-        A class-level dictionary that keeps track of all instantiated objects.
-
-    Methods:
-    --------
-    __new__(cls, sha):
-        Constructs a new instance and registers it in '__all_obj__'.
-    _link():
-        Establishes parent-child relationships between Git objects.
-    link_children():
-        Ensures all objects in '__all_obj__' have established their links.
-    _from_cat_file(sha):
-        Creates a Git object from the 'git cat-file' command output.
-    _from_show(sha):
-        Creates a Git object from the 'git show' command output.
-    obj(sha):
-        Retrieves a Git object by its SHA, or creates it if it doesn't exist.
-    commit(commit_time, commit_hash, tree_hash, parent_hashs, author_email, author_name):
-        Creates and initializes a detailed Git object representing a commit.
-    __repr__():
-        Returns a formatted string representing the Git object's essential details.
-    """
     __all_obj__ = {}
 
     def __new__(cls, sha):
@@ -197,6 +170,9 @@ class git_obj(git_sha):
                     res._author = (auth, email)
                 else:
                     res._author = (line.strip(), None)
+
+
+        logging.debug('======= res in _from_cat_file =======: \n%s', res)
         return res
 
     @classmethod
@@ -319,7 +295,7 @@ def all_objects():
     res = list(res.keys())  # Sorted uniq
     return res
 
-def git_log():
+#def git_log():
     """
     Retrieve and parse Git commit log entries from the entire Git repository.
 
@@ -350,6 +326,7 @@ def git_log():
             ...
         ]
     """
+def git_log():
     def to_obj(line):
         parts = line.split('|', 5)
         parts[3] = parts[3].split()  # Multiple parents
@@ -361,6 +338,22 @@ def git_log():
     git_obj.link_children()
     git_sha.calibrate_min()
     return res
+
+def format_git_logs_as_string(log_entries):
+    """
+    Formats a list of git log entries into a structured string.
+
+    Args:
+        log_entries (list of str): Each string is a git log entry in the format "child SHA < parent SHA author email".
+
+    Returns:
+        str: A formatted string representing the commit chain.
+    """
+    formatted_output = "Commit Chain:\n"
+    for entry in log_entries:
+        formatted_output += entry+"\n"
+    return formatted_output
+
 
 def git_branches():
     """
