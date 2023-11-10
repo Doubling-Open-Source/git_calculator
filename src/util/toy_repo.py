@@ -38,7 +38,17 @@ def create_git_repo_with_timed_commits(directory_to_create_repo):
 
         # Stage the file and make the commit with specified dates
         git_util.git_run('add', f'file{i}.txt')
-        git_util.git_run('commit', '-m', f'Commit {i} by {author_name}', '--author', f'{author_name} <{author_email}>', '--date', commit_date.strftime('%Y-%m-%dT%H:%M:%S'))
+
+        formatted_date = commit_date.strftime('%Y-%m-%dT%H:%M:%S')
+        # Set the environment variables for Git
+        os.environ['GIT_COMMITTER_DATE'] = formatted_date
+        os.environ['GIT_AUTHOR_DATE'] = formatted_date
+        git_util.git_run('commit', '-m', f'Commit {i} by {author_name}',
+                        '--author', f'{author_name} <{author_email}>')
+        
+        # Reset or clear the environment variables
+        del os.environ['GIT_COMMITTER_DATE']
+        del os.environ['GIT_AUTHOR_DATE']
 
 def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
 
