@@ -13,28 +13,90 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window_size=250):
+
+def calculate_time_deltas(logs):
+    """
+    Calculate time deltas between commits for each author.
+
+    Args:
+        logs (list): List of commit logs.
+
+    Returns:
+        list: List of time deltas with dates.
+    """
+    author_map = {}
+    for commit in logs:
+        a_email = commit._author[0]
+        author_map.setdefault(a_email, []).append(commit)
+
+    time_deltas = []
+    for author, commits in author_map.items():
+        for i in range(len(commits) - 1):
+            current_commit = commits[i]
+            next_commit = commits[i + 1]
+            time_delta = datetime.fromtimestamp(current_commit._when) - datetime.fromtimestamp(next_commit._when)
+            delta_in_minutes = round((time_delta.days * 24 * 60) + (time_delta.seconds / 60), 2)
+            time_deltas.append([current_commit._when, delta_in_minutes])
+    return time_deltas
+
+def commit_statistics(time_deltas, bucket_size):
+    """
+    Statistics about commit times.
+
+    Args:
+        time_deltas (list): List of time deltas with dates.
+        bucket_size (int): Size of each bucket for grouping time deltas.
+    """
+    sorted_deltas = sorted(time_deltas, key=lambda x: x[0])
+    delta_sublists = [sorted_deltas[i:i + bucket_size] for i in range(0, len(sorted_deltas), bucket_size)]
+
+    buf = StringIO()
+    print("INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
+    for sublist in delta_sublists:
+        if len(sublist) >= 2:
+            print(time.ctime(sublist[0][0]), 
+                  sum(item[1] for item in sublist),
+                  round(sum(item[1] for item in sublist) / len(sublist), 2),
+                  int(round(np.percentile([item[1] for item in sublist], 75), 0)), 
+                  int(round(stdev([item[1] for item in sublist]), 0)),
+                  sep=',', file=buf)
+    return buf.getvalue()
+
+def write_commit_statistics_to_file(time_deltas, bucket_size, fname='a.csv'):
+
+    buf = commit_statistics(time_deltas, bucket_size)
+    with open(fname, 'wt') as fout:
+        print(buf.getvalue(), file=fout)
+    if fname.endswith('.csv'):
+        sp_run(['open', fname])
+
+
+def cycle_time_between_commits_by_author(bucket_size=1000):
     """
     Calculate and analyze the cycle time between commits made by author to the main branch.
 
-    This function retrieves Git commit data, calculates the time difference between commits by the same author,
-    and then analyzes the cycle time, which is the time between consecutive commits by the same author.
-
     Args:
         fname (str, optional): The name of the output CSV file to save the analysis results. Defaults to 'a.csv'.
-        bucket_size (int, optional): The size of the time buckets for grouping commits (in number of commits). 
-                                     Defaults to 1000.
-        window_size (int, optional): The size of the moving window for calculating percentiles and standard 
-                                    deviation (in number of commits). Defaults to 250.
+        bucket_size (int, optional): The size of the time buckets for grouping commits. Defaults to 1000.
+        window_size (int, optional): The size of the moving window for calculating percentiles and standard deviation. Defaults to 250.
 
     Returns:
-        str: A CSV-formatted string containing the analysis results, including the interval start date, 
-             the 75th percentile cycle time (in minutes), and the standard deviation of cycle time.
-
-    Example:
-        >>> opposite_cycle_time('analysis_results.csv', bucket_size=500, window_size=100)
-        'INTERVAL START, p75 CYCLE TIME (minutes), std CYCLE TIME\\n2023-09-01 00:00:00, 45, 15\\n...'
+        str: A CSV-formatted string containing the analysis results.
     """
+    logs = git_log()
+    logging.debug('======= logs =======: \n%s', logs)
+    
+    formatted_logs = format_git_logs_as_string(logs)
+    logging.debug('======= formatted logs =======: \n%s', formatted_logs)
+
+    time_deltas = calculate_time_deltas(logs)
+    statistics = commit_statistics(time_deltas, bucket_size)
+
+    return statistics
+
+
+
+""" def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window_size=250):
     oo = git_obj.obj
 
     # head
@@ -92,3 +154,4 @@ def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window
         if fname.endswith('.csv'):
             sp_run(['open', fname])
     return buf.getvalue()
+"""
