@@ -47,8 +47,10 @@ For debugging:
 To play around with the interpreter:
 ```
 python
-from src.util import toy_repo
-toy_repo.create_git_repo_with_timed_commits("/Users/denalilumma/doubling-code/git-calculator/.scratch")
+from src.util.toy_repo import ToyRepoCreator
+trc = ToyRepoCreator("/Users/denalilumma/doubling-code/scratch")
+even_intervals = [7 * i for i in range(12)]  # Weekly intervals
+trc.create_custom_commits(even_intervals)
 ```
 (Replace with your local path)
 
