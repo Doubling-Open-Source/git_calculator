@@ -34,15 +34,12 @@ def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window
 
     # head
     head = git_run('log').stdout.splitlines()[0].split()[1] 
-    #print(head)
 
     # logs
     logs = git_log();
-    #print(logs)
 
     # objs
     objs = all_objects()
-    #print(objs)
 
     # list of commits for each unique author
     author_map = {}
@@ -56,13 +53,8 @@ def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window
             # If it's not a list, create a new list with the existing value and the new value
             author_map[a_email] = [c]
 
-        #print(c)
-        #print(c._author)
-        #print(c._when)
-
     print(author_map)
     # iterate over the map and calculate opposite cycle time
-    #print("DATE, COMMIT CYCLE TIME", file=buf)
     all_time_deltas = []
     # keep track of the time deltas and the commit date
     all_time_deltas_with_date = []
@@ -73,21 +65,17 @@ def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window
         for c in author_map[a]:
             
             # iterate over the commits
-            #print("current commit: " + c) 
             # ignore the last item because there is nothing left to compare it to
             if count >= commit_list_length:
                 continue
 
             # get the next commit 
             cn = author_map[a][count]
-            #print("next commit: " + cn)
             # calculate the time delta
             time_delta = datetime.fromtimestamp(c._when) - datetime.fromtimestamp(cn._when)
             delta_in_minutes = round((time_delta.days * 24 * 60) + (time_delta.total_seconds() / 60),2)
             all_time_deltas.append(delta_in_minutes)
             all_time_deltas_with_date.append([c._when, delta_in_minutes])
-            #print(time_delta)
-            #print(time.ctime(c._when), (delta_in_minutes), sep=',', file=buf)
 
             count += 1 
 
