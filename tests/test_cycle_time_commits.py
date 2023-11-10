@@ -2,9 +2,10 @@ import pytest
 import tempfile
 import logging
 import subprocess
-from src.util import toy_repo  
+from src.util.toy_repo import ToyRepoCreator 
 import os
 from src.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
+import numpy as np
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -24,7 +25,17 @@ def temp_directory():
 
 def test_cycle_time_between_commits_by_author(temp_directory):
 
-    toy_repo.create_git_repo_with_timed_commits(temp_directory)
+    #toy_repo.create_git_repo_with_timed_commits(temp_directory)
     #result = cycle_time_between_commits_by_author(os.path.join(temp_directory, 'test_output.csv'), bucket_size=4, window_size=2)
+    #result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2)
+    trc = ToyRepoCreator(temp_directory)
+    even_intervals = [7 * i for i in range(12)]  # Weekly intervals
+    trc.create_custom_commits(even_intervals)
     result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2)
     logging.debug('======= result =======: \n%s', result)
+    # 4 week if minutes is: 60 minutes * 24 hours * 7 days * 4 weeks = 40320 minutes
+    # 4 commits each with a cycle time of 4 weeks sums to: 161280 minutes
+    # The average is: 40320 minutes
+    # The 75th percentile of 4 commits each with a cycle time of 40320 minutes is: 
+    # The standard deviation is: 0 minutes
+    logging.debug("-----------------p75-----------------: \n%s", np.percentile([40320, 40320, 40320, 40320], 75))

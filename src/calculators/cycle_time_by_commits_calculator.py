@@ -1,12 +1,17 @@
 from datetime import datetime
 from io import StringIO
 import time
-from src.git_ir import all_objects, git_log, git_obj
+from src.git_ir import all_objects, git_log, git_obj, format_git_logs_as_string
 from src.util.git_util import git_run
 from subprocess import run as sp_run
 import numpy as np
 from statistics import stdev
+import logging
 
+logging.basicConfig(
+    level=logging.DEBUG,  # Set the desired log level
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 
 def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window_size=250):
     """
@@ -35,94 +40,48 @@ def cycle_time_between_commits_by_author(fname='a.csv', bucket_size=1000, window
     # head
     head = git_run('log').stdout.splitlines()[0].split()[1] 
 
-    # logs
-    logs = git_log();
+    logs = git_log()
 
-    # objs
+    logging.debug('======= logs =======: \n%s', logs)
+    formatted_logs = format_git_logs_as_string(logs)
+    logging.debug('======= formatted logs =======: \n%s', formatted_logs)
+
     objs = all_objects()
+    logging.debug('======= objs =======: \n%s', objs)
 
-    # list of commits for each unique author
+    # Create author_map
     author_map = {}
-
     for c in logs:
-
         a_email = c._author[0]
-        if a_email in author_map:
-            author_map[a_email].append(c)
-        else:
-            # If it's not a list, create a new list with the existing value and the new value
-            author_map[a_email] = [c]
+        author_map.setdefault(a_email, []).append(c)
 
-    print(author_map)
-    # iterate over the map and calculate opposite cycle time
+    # Calculate time deltas
     all_time_deltas = []
-    # keep track of the time deltas and the commit date
     all_time_deltas_with_date = []
-    for a in author_map:
-
-        count = 1
-        commit_list_length = len(author_map[a])
-        for c in author_map[a]:
-            
-            # iterate over the commits
-            # ignore the last item because there is nothing left to compare it to
-            if count >= commit_list_length:
-                continue
-
-            # get the next commit 
-            cn = author_map[a][count]
-            # calculate the time delta
+    for a, commits in author_map.items():
+        for i in range(len(commits) - 1):
+            c = commits[i]
+            cn = commits[i + 1]
             time_delta = datetime.fromtimestamp(c._when) - datetime.fromtimestamp(cn._when)
-            delta_in_minutes = round((time_delta.days * 24 * 60) + (time_delta.total_seconds() / 60),2)
+            delta_in_minutes = round((time_delta.days * 24 * 60) + (time_delta.total_seconds() / 60), 2)
             all_time_deltas.append(delta_in_minutes)
             all_time_deltas_with_date.append([c._when, delta_in_minutes])
 
-            count += 1 
+    # Sort by date and create sublists
+    all_time_deltas_with_date = sorted(all_time_deltas_with_date, key=lambda x: x[0])
+    all_time_deltas_with_date_sublist = [all_time_deltas_with_date[i:i + bucket_size] for i in range(0, len(all_time_deltas_with_date), bucket_size)]
 
-    # ---
-
-    # sort by date
-
-
-
-
-    # separate the all_time_deltas into buckets
-
-    all_time_deltas_with_date_length = len(all_time_deltas_with_date)
-    sublist_size = all_time_deltas_with_date_length // bucket_size
-    all_time_deltas_with_date_sublist = []
-
-    # sort the list by date
-    all_time_deltas_with_date = sorted(all_time_deltas_with_date)
-
-    # iterate through the original list and create sublists
-    for i in range(0, all_time_deltas_with_date_length, sublist_size):
-        sublist_date = all_time_deltas_with_date[i:i + sublist_size]
-        all_time_deltas_with_date_sublist.append(sublist_date)
-
-    # If there's a remainder, the last sublist may be smaller than sublist_size
-    # You can include the remaining elements in the last sublist
-    if len(all_time_deltas_with_date_sublist) < bucket_size and all_time_deltas_with_date_sublist % sublist_size != 0:
-        last_sublist_date = all_time_deltas_with_date[len(all_time_deltas_with_date_sublist) * sublist_size:]
-        all_time_deltas_with_date_sublist.append(last_sublist_date)
-
-
-    # for each subset, calculate the p75 and the standard deviation
-    # add these time series data with the date of the first commit in the subset
-    # write as a row in the table the date, the P75 and the standard dev
-    
+    # Calculate p75 and std deviation
     buf = StringIO()
-    print("INTERVAL START, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
-    # iterate over the subsets
-    l_length = len(all_time_deltas_with_date_sublist)
-    for i in range (0, l_length, 1):
-        #calculate p75
-        #print("all_time_deltas_with_date_sublist[i]: " + str(all_time_deltas_with_date_sublist))
-        #print("all_time_deltas_sublist[i]: "+str(all_time_deltas_sublist[i]) )
-        if len(all_time_deltas_with_date_sublist[i]) >= 2:
-            print(time.ctime(all_time_deltas_with_date_sublist[i][0][0]), 
-                  int(round(np.percentile([item[1] for item in all_time_deltas_with_date_sublist[i]], 75), 0)), 
-                  int(round(stdev([item[1] for item in all_time_deltas_with_date_sublist[i]]), 0)),
+    print("INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
+
+    for sublist in all_time_deltas_with_date_sublist:
+        if len(sublist) >= 2:
+            print(time.ctime(sublist[0][0]), 
+                  sum(item[1] for item in sublist),
+                  round(sum(item[1] for item in sublist) / len(sublist), 2),
+                  int(round(np.percentile([item[1] for item in sublist], 75), 0)), 
+                  int(round(stdev([item[1] for item in sublist]), 0)),
                   sep=',', file=buf)
 
     if fname is None:
