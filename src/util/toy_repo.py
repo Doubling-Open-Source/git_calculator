@@ -1,6 +1,7 @@
 import datetime
 from src.util import git_util
 import os
+import logging
 
 # TODO: Refactor this next 
 def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
@@ -116,8 +117,12 @@ class ToyRepoCreator:
         self.initialize_repo()
 
         for i, interval in enumerate(commit_intervals, start=1):
+            logging.debug('======= i =======: \n%s', i)
             author_name, author_email = self.authors[i % len(self.authors)]
+            logging.debug('======= author_name =======: \n%s', author_name)
+            logging.debug('======= author_email =======: \n%s', author_email)
             commit_date = self.start_date + datetime.timedelta(days=interval)
+            logging.debug('======= commit_date =======: \n%s', commit_date)
             self.create_commit(i, author_name, author_email, commit_date)
 
 
