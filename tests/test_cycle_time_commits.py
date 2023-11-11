@@ -185,3 +185,41 @@ def test_cycle_time_between_commits_by_author_high_deviation(temp_directory):
 
     assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
 
+def test_cycle_time_between_commits_single_author_high_deviation(temp_directory):
+    """
+    Tests the calculation of cycle time between git commits by authors in a toy repository.
+
+    This function creates a toy repository in a temporary directory using the ToyRepoCreator class.
+    It then generates custom commits at even weekly intervals (7 days apart) for a total of 12 weeks.
+    The git log is retrieved and used to calculate time deltas between commits. These time deltas are
+    then used to compute commit statistics with a specified bucket size.
+
+    The test verifies the statistics generated against expected values. These values are the sum,
+    average, 75th percentile, and standard deviation of the commit cycle times in minutes over the 
+    period of 12 weeks. The expected results are calculated for commits with cycle times of 4 weeks each.
+
+    Args:
+        temp_directory (str): A temporary directory path where the toy repository will be created.
+
+    Raises:
+        AssertionError: If the calculated commit statistics do not match the expected values.
+    """
+    trc = ToyRepoCreator(temp_directory)
+    small_deviation_intervals = [1, 18, 40, 157, 255, 256, 257, 398, 431, 432, 433, 434]
+    logging.debug('======= even_intervals =======: \n%s', small_deviation_intervals)
+    trc.create_custom_commits_single_author(small_deviation_intervals)
+    logs = git_log()
+    tds = calculate_time_deltas(logs)
+    result = commit_statistics(tds, bucket_size=4)
+
+    # 4 week of minutes is: 60 minutes * 24 hours * 7 days * 4 weeks = 40320 minutes
+    # 4 commits each with a cycle time of 4 weeks sums to: 161280 minutes
+    # The average is: 40320 minutes
+    # The 75th percentile of 4 commits each with a cycle time of 40320 minutes is: 40320
+    # The standard deviation is: 0 minutes
+
+    logging.debug('======= result =======: \n%s', result)
+
+    expected = [('Mon May 13 00:00:00 2024', 1368000.0, 342000.0, 351720, 22075), ('Tue Nov  5 00:00:00 2024', 812160.0, 203040.0, 253440, 100800)]
+
+    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)

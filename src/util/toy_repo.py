@@ -126,3 +126,14 @@ class ToyRepoCreator:
             self.create_commit(i, author_name, author_email, commit_date)
 
 
+    def create_custom_commits_single_author(self, commit_intervals):
+        self.initialize_repo()
+
+        for i, interval in enumerate(commit_intervals, start=1):
+            logging.debug('======= i =======: \n%s', i)
+            author_name, author_email = self.authors[0][0], self.authors[0][1]  
+            logging.debug('======= author_name =======: \n%s', author_name)
+            logging.debug('======= author_email =======: \n%s', author_email)
+            commit_date = self.start_date + datetime.timedelta(days=interval)
+            logging.debug('======= commit_date =======: \n%s', commit_date)
+            self.create_commit(i, author_name, author_email, commit_date)
