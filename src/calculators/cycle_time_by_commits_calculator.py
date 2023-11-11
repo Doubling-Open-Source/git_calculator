@@ -49,18 +49,33 @@ def commit_statistics(time_deltas, bucket_size):
     """
     sorted_deltas = sorted(time_deltas, key=lambda x: x[0])
     delta_sublists = [sorted_deltas[i:i + bucket_size] for i in range(0, len(sorted_deltas), bucket_size)]
+    return_value = []
 
-    buf = StringIO()
-    print("INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
     for sublist in delta_sublists:
         if len(sublist) >= 2:
-            print(time.ctime(sublist[0][0]), 
-                  sum(item[1] for item in sublist),
-                  round(sum(item[1] for item in sublist) / len(sublist), 2),
-                  int(round(np.percentile([item[1] for item in sublist], 75), 0)), 
-                  int(round(stdev([item[1] for item in sublist]), 0)),
-                  sep=',', file=buf)
+            s_start_time = time.ctime(sublist[0][0])
+            s_sum = sum(item[1] for item in sublist)
+            s_average = round(sum(item[1] for item in sublist) / len(sublist), 2)
+            s_p75 = int(round(np.percentile([item[1] for item in sublist], 75), 0))
+            s_std = int(round(stdev([item[1] for item in sublist]), 0))
+            return_value.append((s_start_time, s_sum, s_average, s_p75, s_std))
+
+    return return_value
+
+def commit_statistics_to_string(time_deltas, bucket_size):
+
+    bucket_stats = commit_statistics(time_deltas, bucket_size)
+    buf = StringIO()
+    print("INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
+    for s in bucket_stats:    
+        print(s[0], 
+            s[1],
+            s[2],
+            s[3], 
+            s[4],
+            sep=',', file=buf)
     return buf.getvalue()
+
 
 def write_commit_statistics_to_file(time_deltas, bucket_size, fname='a.csv'):
 

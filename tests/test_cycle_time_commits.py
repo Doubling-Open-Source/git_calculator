@@ -4,7 +4,7 @@ import logging
 import subprocess
 from src.util.toy_repo import ToyRepoCreator 
 import os
-from src.calculators.cycle_time_by_commits_calculator import commit_statistics, calculate_time_deltas
+from src.calculators.cycle_time_by_commits_calculator import commit_statistics, calculate_time_deltas, commit_statistics_to_string
 import numpy as np
 from src.git_ir import git_log
 
@@ -25,20 +25,39 @@ def temp_directory():
 
 
 def test_cycle_time_between_commits_by_author(temp_directory):
+    """
+    Tests the calculation of cycle time between git commits by authors in a toy repository.
 
-    #toy_repo.create_git_repo_with_timed_commits(temp_directory)
-    #result = cycle_time_between_commits_by_author(os.path.join(temp_directory, 'test_output.csv'), bucket_size=4, window_size=2)
-    #result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2)
+    This function creates a toy repository in a temporary directory using the ToyRepoCreator class.
+    It then generates custom commits at even weekly intervals (7 days apart) for a total of 12 weeks.
+    The git log is retrieved and used to calculate time deltas between commits. These time deltas are
+    then used to compute commit statistics with a specified bucket size.
+
+    The test verifies the statistics generated against expected values. These values are the sum,
+    average, 75th percentile, and standard deviation of the commit cycle times in minutes over the 
+    period of 12 weeks. The expected results are calculated for commits with cycle times of 4 weeks each.
+
+    Args:
+        temp_directory (str): A temporary directory path where the toy repository will be created.
+
+    Raises:
+        AssertionError: If the calculated commit statistics do not match the expected values.
+    """
     trc = ToyRepoCreator(temp_directory)
     even_intervals = [7 * i for i in range(12)]  # Weekly intervals
     trc.create_custom_commits(even_intervals)
     logs = git_log()
     tds = calculate_time_deltas(logs)
     result = commit_statistics(tds, bucket_size=4)
-    logging.debug('======= result =======: \n%s', result)
-    # 4 week if minutes is: 60 minutes * 24 hours * 7 days * 4 weeks = 40320 minutes
+
+    # 4 week of minutes is: 60 minutes * 24 hours * 7 days * 4 weeks = 40320 minutes
     # 4 commits each with a cycle time of 4 weeks sums to: 161280 minutes
     # The average is: 40320 minutes
-    # The 75th percentile of 4 commits each with a cycle time of 40320 minutes is: 
+    # The 75th percentile of 4 commits each with a cycle time of 40320 minutes is: 40320
     # The standard deviation is: 0 minutes
-    logging.debug("-----------------p75-----------------: \n%s", np.percentile([40320, 40320, 40320, 40320], 75))
+
+    expected= [('Fri Sep 29 00:00:00 2023', 161280.0, 40320.0, 40320, 0), 
+               ('Fri Oct 27 00:00:00 2023', 161280.0, 40320.0, 40320, 0)]
+    
+    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+
