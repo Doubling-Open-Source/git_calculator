@@ -80,7 +80,7 @@ def commit_statistics_normalized_by_month(time_deltas):
     # iterate through sorted_deltas and assign each to the appropriate month in month_buckets
     for delta in sorted_deltas:
         logging.debug('======= delta =======: \n%s', delta)
-        month_year = (datetime.fromtimestamp(delta[0]).year, datetime.fromtimestamp(delta[0]).month)
+        month_year = (str(datetime.fromtimestamp(delta[0]).year)+"-"+str(datetime.fromtimestamp(delta[0]).month))
         logging.debug('======= month_year =======: \n%s', month_year)
         if month_year != current_month:
             current_month = month_year
@@ -108,12 +108,11 @@ def commit_statistics_normalized_by_month(time_deltas):
 
     return return_value
 
-def commit_statistics_to_string(time_deltas, bucket_size):
+def commit_statistics_to_string(commit_stats):
 
-    bucket_stats = commit_statistics(time_deltas, bucket_size)
     buf = StringIO()
     print("INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME", file=buf)
-    for s in bucket_stats:    
+    for s in commit_stats:    
         print(s[0], 
             s[1],
             s[2],
@@ -123,11 +122,11 @@ def commit_statistics_to_string(time_deltas, bucket_size):
     return buf.getvalue()
 
 
-def write_commit_statistics_to_file(time_deltas, bucket_size, fname='a.csv'):
+def write_commit_statistics_to_file(commit_stats, fname='a.csv'):
 
-    buf = commit_statistics(time_deltas, bucket_size)
+    bs = commit_statistics_to_string(commit_stats)
     with open(fname, 'wt') as fout:
-        print(buf.getvalue(), file=fout)
+        print(bs, file=fout)
     if fname.endswith('.csv'):
         sp_run(['open', fname])
 
