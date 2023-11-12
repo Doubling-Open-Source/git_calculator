@@ -62,6 +62,68 @@ def commit_statistics(time_deltas, bucket_size):
 
     return return_value
 
+def commit_statistics_normalized_by_month(time_deltas):
+    """
+    Statistics about commit cycle times, where each set of data is 
+    normalized by the commits in a given month.
+
+    Args:
+        time_deltas (list): List of time deltas with dates.
+    """
+    sorted_deltas = sorted(time_deltas, key=lambda x: x[0])
+    # find the first date in the list
+    first_date = sorted_deltas[0][0]
+    # create a list of to hold each month
+    month_buckets = []
+    current_month = None
+
+    # iterate through sorted_deltas and assign each to the appropriate month in month_buckets
+    for delta in sorted_deltas:
+        logging.debug('======= delta =======: \n%s', delta)
+        month_year = (datetime.fromtimestamp(delta[0]).year, datetime.fromtimestamp(delta[0]).month)
+        logging.debug('======= month_year =======: \n%s', month_year)
+        if month_year != current_month:
+            current_month = month_year
+            month_buckets.append([current_month])
+            month_buckets[-1].append([])
+        month_buckets[-1][1].append(delta)
+    
+    logging.debug('======= month_buckets =======: \n%s', month_buckets)
+    return_value = []
+
+    sample = [
+            [(2023, 9), 
+               [[1694502000, 1440.0], 
+                [1694588400, 1440.0], 
+                [1694674800, 1440.0]]], 
+            [(2023, 10), 
+                [[1696489200, 30240.0], 
+                 [1696575600, 1440.0], 
+                 [1697094000, 8640.0], 
+                 [1697785200, 11520.0], 
+                 [1698735600, 15840.0]]], 
+            [(2023, 11), 
+                [[1700035200, 21600.0], 
+                 [1700467200, 7200.0], 
+                 [1700899200, 7200.0]]]]
+
+    for m in month_buckets:
+        logging.debug('======= m =======: \n%s', m)
+        if len(m[1]) >= 2:
+            s_start_time = m[0]  # First data point's timestamp
+            logging.debug('======= s_start_time =======: \n%s', s_start_time)
+            s_sum = sum(item[1] for item in m[1]) # Summing the second elements of the sub-items
+            logging.debug('======= s_sum =======: \n%s', s_sum)
+            s_average = round(s_sum / len(m[1]), 2)
+            logging.debug('======= s_average =======: \n%s', s_average)
+            s_p75 = int(round(np.percentile([item[1] for item in m[1]], 75), 0))
+            logging.debug('======= s_p75 =======: \n%s', s_p75)
+            s_std = int(round(stdev([item[1] for item in m[1]]), 0))
+            logging.debug('======= s_std =======: \n%s', s_std)
+            return_value.append((s_start_time, s_sum, s_average, s_p75, s_std))
+
+    return return_value
+
 def commit_statistics_to_string(time_deltas, bucket_size):
 
     bucket_stats = commit_statistics(time_deltas, bucket_size)
