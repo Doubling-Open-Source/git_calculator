@@ -99,9 +99,11 @@ Step three, analyze:
 # Launch python3 
 python
 # Paste:
-# ...
-import git-calculator as gc
-...
+from src import git_ir as gir
+from src.calculators import cycle_time_by_commits_calculator as commit_calc
+logs = gir.git_log()
+tds = commit_calc.calculate_time_deltas(logs)
+result = commit_calc.commit_statistics_normalized_by_month(tds)
 ```
 
 You can now open `a.svg` in your browser.
