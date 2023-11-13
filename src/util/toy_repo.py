@@ -30,24 +30,25 @@ def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
     # Simulate team workflow for 12 iterations
     for i in range(1, 13):
         author_name, author_email = authors[i % len(authors)]
-
-        # Calculate the commit and author date for this commit
         commit_date = start_date + datetime.timedelta(weeks=i - 1)
-
-        # Create a topic branch for each commit
         topic_branch_name = f'topic-branch-{i}'
         git_util.git_run('checkout', '-b', topic_branch_name)
 
-        # Create a new file and add some content
         with open(f'file{i}.txt', 'w') as file:
             file.write(f'Commit {i} by {author_name}')
 
-        # Stage the file and make the commit with specified dates
         git_util.git_run('add', f'file{i}.txt')
-        git_util.git_run('commit', '-m', f'Commit {i} by {author_name}', '--author', f'{author_name} <{author_email}>', '--date', commit_date.strftime('%Y-%m-%dT%H:%M:%S'))
 
-        # Merge the topic branch into the main branch
-        git_util.git_run('checkout', '-b', 'main')
+        # Modify commit message to include 'bugfix' or 'hotfix' at certain intervals
+        commit_msg = f"Commit {i} by {author_name}"
+        if i % 4 == 0:  # Every 4th commit
+            commit_msg += " - hotfix"
+        elif i % 3 == 0:  # Every 3rd commit
+            commit_msg += " - bugfix"
+
+        git_util.git_run('commit', '-m', commit_msg, '--author', f'{author_name} <{author_email}>', '--date', commit_date.strftime('%Y-%m-%dT%H:%M:%S'))
+
+        git_util.git_run('checkout', 'main')
         git_util.git_run('merge', topic_branch_name)
 
 
@@ -107,8 +108,14 @@ class ToyRepoCreator:
         os.environ['GIT_COMMITTER_DATE'] = formatted_date
         os.environ['GIT_AUTHOR_DATE'] = formatted_date
 
-        git_util.git_run('commit', '-m', f'Commit {file_index} by {author_name}',
-                         '--author', f'{author_name} <{author_email}>')
+        # Modify commit message to include 'bugfix' or 'hotfix'
+        commit_msg = f"Commit {file_index} by {author_name}"
+        if file_index % 4 == 0:  # Every 4th commit
+            commit_msg += " - hotfix"
+        elif file_index % 3 == 0:  # Every 3rd commit
+            commit_msg += " - bugfix"
+
+        git_util.git_run('commit', '-m', commit_msg, '--author', f'{author_name} <{author_email}>')
 
         del os.environ['GIT_COMMITTER_DATE']
         del os.environ['GIT_AUTHOR_DATE']
