@@ -26,6 +26,7 @@ def calculate_time_deltas(logs):
     """
     author_map = {}
     for commit in logs:
+        logging.debug('======= commit =======: \n%s', commit)
         a_email = commit._author[0]
         author_map.setdefault(a_email, []).append(commit)
 
