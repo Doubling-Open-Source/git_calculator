@@ -104,7 +104,7 @@ from src.calculators import cycle_time_by_commits_calculator as commit_calc
 logs = gir.git_log()
 tds = commit_calc.calculate_time_deltas(logs)
 result = commit_calc.commit_statistics_normalized_by_month(tds)
-commit_calc.write_commit_statistics_to_file(result) # Default file name is "a.csv"
+commit_calc.write_commit_statistics_to_file(result, "scratch.csv") # Default file name is "a.csv"
 ```
 
 Example output:
