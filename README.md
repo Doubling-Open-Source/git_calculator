@@ -1,6 +1,76 @@
 # git-calculator
 Calculate dora metrics and related from a Git repository on the local file system. Does not require integration with GitHub or any other git service provider.
 
+# Getting Started
+
+1. First, clone this repository and set it up:
+```sh
+# Clone the repository
+git clone https://github.com/yourusername/git-calculator.git
+cd git-calculator
+
+# Set up Python environment
+python -m venv venv
+source venv/bin/activate  # On Windows, use: venv\Scripts\activate
+pip install -r requirements.txt
+
+# Set Python path
+export PYTHONPATH=$(pwd)  # On Windows, use: set PYTHONPATH=%cd%
+```
+
+2. Navigate to the Git repository you want to analyze:
+```sh
+cd /path/to/your/repository
+```
+
+3. Run Python and calculate your metrics:
+```py
+# Launch Python
+python
+
+# Import required modules
+from src import git_ir as gir
+from src.calculators import cycle_time_by_commits_calculator as commit_calc
+from src.calculators import change_failure_calculator as cfc
+from src.calculators import chart_generator as cg
+
+# Get the data
+logs = gir.git_log()
+
+# Calculate cycle time
+tds = commit_calc.calculate_time_deltas(logs)
+cycle_time_data = commit_calc.commit_statistics_normalized_by_month(tds)
+
+# Calculate change failure rate
+data_by_month = cfc.extract_commit_data(logs)
+failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
+
+# Generate charts and save data
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data,
+                  save_data=True)
+```
+
+4. Check your results:
+   - A new `metrics` directory will be created in your repository
+   - You'll find four files with your repository name as prefix:
+     - `metrics/{repo_name}_cycle_time_data.csv` - Raw cycle time data
+     - `metrics/{repo_name}_change_failure_data.csv` - Raw change failure rate data
+     - `metrics/{repo_name}_cycle_time_chart.png` - Cycle time chart
+     - `metrics/{repo_name}_change_failure_rate_chart.png` - Change failure rate chart
+
+5. To generate new charts later without recalculating:
+```py
+from src.calculators import chart_generator as cg
+
+# Load the saved data
+cycle_time_data, failure_rate_data = cg.load_metrics_data()
+
+# Generate new charts
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data)
+```
+
 # Project Outline
 
 ```
@@ -187,3 +257,68 @@ cg.plot_change_failure_rate(failure_rate_data)
 ```
 
 The charts will be saved as high-resolution PNG files (300 DPI) in your current directory.
+
+# Saving and Loading Metrics Data
+
+You can save the calculated metrics data to CSV files and generate charts from them later:
+
+```py
+# First time: Calculate and save the data
+from src import git_ir as gir
+from src.calculators import cycle_time_by_commits_calculator as commit_calc
+from src.calculators import change_failure_calculator as cfc
+from src.calculators import chart_generator as cg
+
+# Get the data
+logs = gir.git_log()
+
+# Calculate cycle time
+tds = commit_calc.calculate_time_deltas(logs)
+cycle_time_data = commit_calc.commit_statistics_normalized_by_month(tds)
+
+# Calculate change failure rate
+data_by_month = cfc.extract_commit_data(logs)
+failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
+
+# Save data and generate charts
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data,
+                  save_data=True)
+
+# Later: Load saved data and generate new charts
+from src.calculators import chart_generator as cg
+
+# Load the saved data
+cycle_time_data, failure_rate_data = cg.load_metrics_data()
+
+# Generate new charts
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data)
+```
+
+This will create a `metrics` directory in your repository and save four files with the repository name as prefix (e.g., `tensorflow_cycle_time_data.csv`):
+1. `metrics/{repo_name}_cycle_time_data.csv` - Raw cycle time data
+2. `metrics/{repo_name}_change_failure_data.csv` - Raw change failure rate data
+3. `metrics/{repo_name}_cycle_time_chart.png` - Cycle time chart
+4. `metrics/{repo_name}_change_failure_rate_chart.png` - Change failure rate chart
+
+The repository name is automatically detected from:
+1. The git remote URL (e.g., `git@github.com:user/tensorflow.git` → `tensorflow`)
+2. If no remote is found, the current directory name is used
+3. If neither is available, `repo` is used as a fallback
+
+You can also use a custom prefix instead of the repository name:
+```py
+# Save with custom prefix
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data,
+                  save_data=True,
+                  prefix='team_a_')
+
+# Load with custom prefix
+cycle_time_data, failure_rate_data = cg.load_metrics_data(prefix='team_a_')
+cg.generate_charts(cycle_time_data=cycle_time_data, 
+                  failure_rate_data=failure_rate_data)
+```
+
+This is useful when you want to compare metrics across different teams or time periods.

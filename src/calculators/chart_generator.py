@@ -3,6 +3,9 @@ import pandas as pd
 import seaborn as sns
 from datetime import datetime
 import numpy as np
+import json
+import os
+from src.util.git_util import git_run
 
 def setup_plot_style():
     """Set up a modern, clean style for the plots"""
@@ -16,6 +19,92 @@ def setup_plot_style():
     plt.rcParams['axes.facecolor'] = 'white'
     plt.rcParams['savefig.facecolor'] = 'white'
     plt.rcParams['savefig.edgecolor'] = 'white'
+
+def ensure_metrics_dir():
+    """
+    Ensure the metrics directory exists.
+    Returns the path to the metrics directory.
+    """
+    metrics_dir = os.path.join(os.getcwd(), 'metrics')
+    os.makedirs(metrics_dir, exist_ok=True)
+    return metrics_dir
+
+def get_repo_name():
+    """
+    Get the repository name from git configuration.
+    Returns the repository name or 'repo' if not found.
+    """
+    try:
+        # Try to get the remote URL
+        remote_url = git_run('config', '--get', 'remote.origin.url').stdout.strip()
+        if remote_url:
+            # Extract repo name from URL (handles both https and ssh formats)
+            repo_name = os.path.basename(remote_url)
+            # Remove .git extension if present
+            if repo_name.endswith('.git'):
+                repo_name = repo_name[:-4]
+            return repo_name
+    except:
+        pass
+    
+    # If remote URL not found, try to get the directory name
+    try:
+        repo_name = os.path.basename(os.getcwd())
+        return repo_name
+    except:
+        return 'repo'
+
+def save_metrics_data(cycle_time_data=None, failure_rate_data=None, prefix=None):
+    """
+    Save the calculated metrics data to CSV files.
+    
+    Args:
+        cycle_time_data: List of tuples (month, sum, average, p75, std)
+        failure_rate_data: List of tuples (month, rate)
+        prefix: Optional prefix for the output files. If None, uses repo name.
+    """
+    metrics_dir = ensure_metrics_dir()
+    if prefix is None:
+        prefix = f"{get_repo_name()}_"
+    
+    if cycle_time_data:
+        df = pd.DataFrame(cycle_time_data, columns=['Month', 'Sum', 'Average', 'p75', 'std'])
+        df.to_csv(os.path.join(metrics_dir, f'{prefix}cycle_time_data.csv'), index=False)
+    
+    if failure_rate_data:
+        df = pd.DataFrame(failure_rate_data, columns=['Month', 'Rate'])
+        df.to_csv(os.path.join(metrics_dir, f'{prefix}change_failure_data.csv'), index=False)
+
+def load_metrics_data(prefix=None):
+    """
+    Load the metrics data from CSV files.
+    
+    Args:
+        prefix: Optional prefix for the input files. If None, uses repo name.
+    
+    Returns:
+        tuple: (cycle_time_data, failure_rate_data) as lists of tuples
+    """
+    metrics_dir = ensure_metrics_dir()
+    if prefix is None:
+        prefix = f"{get_repo_name()}_"
+    
+    cycle_time_data = None
+    failure_rate_data = None
+    
+    try:
+        df = pd.read_csv(os.path.join(metrics_dir, f'{prefix}cycle_time_data.csv'))
+        cycle_time_data = [tuple(x) for x in df.values]
+    except FileNotFoundError:
+        pass
+    
+    try:
+        df = pd.read_csv(os.path.join(metrics_dir, f'{prefix}change_failure_data.csv'))
+        failure_rate_data = [tuple(x) for x in df.values]
+    except FileNotFoundError:
+        pass
+    
+    return cycle_time_data, failure_rate_data
 
 def plot_cycle_time(cycle_time_data, output_file='cycle_time_chart.png'):
     """
@@ -82,7 +171,8 @@ def plot_cycle_time(cycle_time_data, output_file='cycle_time_chart.png'):
     plt.tight_layout()
     
     # Save the plot
-    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    metrics_dir = ensure_metrics_dir()
+    plt.savefig(os.path.join(metrics_dir, output_file), dpi=300, bbox_inches='tight')
     plt.close()
 
 def plot_change_failure_rate(failure_rate_data, output_file='change_failure_rate_chart.png'):
@@ -143,18 +233,27 @@ def plot_change_failure_rate(failure_rate_data, output_file='change_failure_rate
     plt.tight_layout()
     
     # Save the plot
-    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    metrics_dir = ensure_metrics_dir()
+    plt.savefig(os.path.join(metrics_dir, output_file), dpi=300, bbox_inches='tight')
     plt.close()
 
-def generate_charts(cycle_time_data=None, failure_rate_data=None):
+def generate_charts(cycle_time_data=None, failure_rate_data=None, save_data=False, prefix=None):
     """
     Generate charts for both metrics if data is provided.
     
     Args:
         cycle_time_data: List of tuples (month, sum, average, p75, std)
         failure_rate_data: List of tuples (month, rate)
+        save_data: Whether to save the data to CSV files
+        prefix: Optional prefix for the output files. If None, uses repo name.
     """
+    if prefix is None:
+        prefix = f"{get_repo_name()}_"
+    
+    if save_data:
+        save_metrics_data(cycle_time_data, failure_rate_data, prefix)
+    
     if cycle_time_data:
-        plot_cycle_time(cycle_time_data)
+        plot_cycle_time(cycle_time_data, f'{prefix}cycle_time_chart.png')
     if failure_rate_data:
-        plot_change_failure_rate(failure_rate_data) 
+        plot_change_failure_rate(failure_rate_data, f'{prefix}change_failure_rate_chart.png') 
