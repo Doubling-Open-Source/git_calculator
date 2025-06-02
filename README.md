@@ -135,3 +135,55 @@ Month,Change Failure Rate (%)
 ```
 
 The change failure rate is calculated by identifying commits that contain keywords like "revert", "hotfix", "bugfix", "bug", "fix", "problem", or "issue" in their commit messages. The rate is expressed as a percentage of total commits that required fixes.
+
+# Generating Charts
+
+To generate modern-looking charts with trendlines for both metrics:
+
+```py
+# Launch python3 
+python
+# Paste:
+from src import git_ir as gir
+from src.calculators import cycle_time_by_commits_calculator as commit_calc
+from src.calculators import change_failure_calculator as cfc
+from src.calculators import chart_generator as cg
+
+# Get the data
+logs = gir.git_log()
+
+# Calculate cycle time
+tds = commit_calc.calculate_time_deltas(logs)
+cycle_time_data = commit_calc.commit_statistics_normalized_by_month(tds)
+
+# Calculate change failure rate
+data_by_month = cfc.extract_commit_data(logs)
+failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
+
+# Generate charts
+cg.generate_charts(cycle_time_data=cycle_time_data, failure_rate_data=failure_rate_data)
+```
+
+This will create two files:
+1. `cycle_time_chart.png` - Shows the average cycle time trend with:
+   - A line showing the average cycle time
+   - A trendline showing the overall direction
+   - A shaded area showing the standard deviation
+   - Clear labels and a modern style
+
+2. `change_failure_rate_chart.png` - Shows the change failure rate trend with:
+   - A line showing the failure rate
+   - A trendline showing the overall direction
+   - A reference line at 15% (industry standard)
+   - Clear labels and a modern style
+
+You can also generate just one chart at a time:
+```py
+# Just cycle time
+cg.plot_cycle_time(cycle_time_data)
+
+# Just change failure rate
+cg.plot_change_failure_rate(failure_rate_data)
+```
+
+The charts will be saved as high-resolution PNG files (300 DPI) in your current directory.

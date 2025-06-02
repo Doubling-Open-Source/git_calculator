@@ -54,7 +54,8 @@ def commit_statistics(time_deltas, bucket_size):
 
     for sublist in delta_sublists:
         if len(sublist) >= 2:
-            s_start_time = time.ctime(sublist[0][0])
+            date = datetime.fromtimestamp(sublist[0][0])
+            s_start_time = f"{date.year}-{date.month:02d}"
             s_sum = sum(item[1] for item in sublist)
             s_average = round(sum(item[1] for item in sublist) / len(sublist), 2)
             s_p75 = int(round(np.percentile([item[1] for item in sublist], 75), 0))
@@ -81,7 +82,8 @@ def commit_statistics_normalized_by_month(time_deltas):
     # iterate through sorted_deltas and assign each to the appropriate month in month_buckets
     for delta in sorted_deltas:
         logging.debug('======= delta =======: \n%s', delta)
-        month_year = (str(datetime.fromtimestamp(delta[0]).year)+"-"+str(datetime.fromtimestamp(delta[0]).month))
+        date = datetime.fromtimestamp(delta[0])
+        month_year = f"{date.year}-{date.month:02d}"
         logging.debug('======= month_year =======: \n%s', month_year)
         if month_year != current_month:
             current_month = month_year
