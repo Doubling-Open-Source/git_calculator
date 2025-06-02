@@ -113,3 +113,25 @@ INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME
 2023-10,161280.0,40320.0,40320,0
 2023-11,120960.0,40320.0,40320,0
 ```
+
+To calculate change failure rate:
+```py
+# Launch python3 
+python
+# Paste:
+from src import git_ir as gir
+from src.calculators import change_failure_calculator as cfc
+logs = gir.git_log()
+data_by_month = cfc.extract_commit_data(logs)
+change_failure_rates = cfc.calculate_change_failure_rate(data_by_month)
+cfc.write_change_failure_rate_to_file(change_failure_rates, "change_failure_rate.csv") # Default file name is "change_failure_rate_by_month.csv"
+```
+
+Example output:
+```csv
+Month,Change Failure Rate (%)
+2023-10,25.0
+2023-11,33.3
+```
+
+The change failure rate is calculated by identifying commits that contain keywords like "revert", "hotfix", "bugfix", "bug", "fix", "problem", or "issue" in their commit messages. The rate is expressed as a percentage of total commits that required fixes.

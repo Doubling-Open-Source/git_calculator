@@ -27,7 +27,7 @@ def extract_commit_data(logs):
 
     for commit in logs:
         commit_date = datetime.fromtimestamp(commit._when)
-        month_key = f"{commit_date.year}-{commit_date.month}"
+        month_key = f"{commit_date.year}-{commit_date.month:02d}"
         total_commits, fix_commits = data_by_month[month_key]
 
         # Extract commit message
