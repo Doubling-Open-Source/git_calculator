@@ -127,14 +127,17 @@ def plot_cycle_time(cycle_time_data, output_file='cycle_time_chart.png'):
     # Create the plot
     plt.figure(figsize=(12, 6))
     
-    # Plot P75 cycle time
-    plt.plot(df['Month'], df['p75'], 'o-', label='P75 Cycle Time', linewidth=2)
+    # Plot P75 cycle time with the same blue color as change failure rate
+    plt.plot(df['Month'], df['p75'], 'o-', label='P75 Cycle Time', 
+             linewidth=2, color='#4B8BBE',  # Muted blue
+             markersize=6, markerfacecolor='white', markeredgewidth=1.5)
     
-    # Add trendline
+    # Add trendline with the same darker blue
     z = np.polyfit(range(len(df)), df['p75'], 1)
     p = np.poly1d(z)
     trendline = p(range(len(df)))
-    plt.plot(df['Month'], trendline, '--', label='Trendline', alpha=0.7)
+    plt.plot(df['Month'], trendline, '--', label='Trendline', 
+             alpha=0.7, color='#2B5F8E')  # Darker blue
     
     # Add trendline value annotation
     last_value = trendline[-1]
@@ -142,14 +145,15 @@ def plot_cycle_time(cycle_time_data, output_file='cycle_time_chart.png'):
                 xy=(df['Month'].iloc[-1], last_value),
                 xytext=(10, 10),
                 textcoords='offset points',
-                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                bbox=dict(boxstyle='round,pad=0.5', fc='#FFE873', alpha=0.7),  # Softer yellow
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
     
-    # Add standard deviation as a shaded area
+    # Add standard deviation as a shaded area with the same blue
     plt.fill_between(df['Month'], 
                     df['p75'] - df['std'],
                     df['p75'] + df['std'],
                     alpha=0.2,
+                    color='#4B8BBE',  # Same as main line but with alpha
                     label='Standard Deviation')
     
     # Customize the plot
@@ -189,17 +193,23 @@ def plot_change_failure_rate(failure_rate_data, output_file='change_failure_rate
     df = pd.DataFrame(failure_rate_data, columns=['Month', 'Rate'])
     df['Month'] = pd.to_datetime(df['Month'], format='%Y-%m')
     
+    # Sort data chronologically
+    df = df.sort_values('Month')
+    
     # Create the plot
     plt.figure(figsize=(12, 6))
     
-    # Plot failure rate
-    plt.plot(df['Month'], df['Rate'], 'o-', label='Change Failure Rate', linewidth=2, color='#e74c3c')
+    # Plot failure rate with a muted blue color
+    plt.plot(df['Month'], df['Rate'], 'o-', label='Change Failure Rate', 
+             linewidth=2, color='#4B8BBE',  # Muted blue
+             markersize=6, markerfacecolor='white', markeredgewidth=1.5)
     
-    # Add trendline
+    # Add trendline with a slightly darker blue
     z = np.polyfit(range(len(df)), df['Rate'], 1)
     p = np.poly1d(z)
     trendline = p(range(len(df)))
-    plt.plot(df['Month'], trendline, '--', label='Trendline', alpha=0.7)
+    plt.plot(df['Month'], trendline, '--', label='Trendline', 
+             alpha=0.7, color='#2B5F8E')  # Darker blue
     
     # Add trendline value annotation at the last point of the trendline
     last_month = df['Month'].iloc[-1]
@@ -208,11 +218,11 @@ def plot_change_failure_rate(failure_rate_data, output_file='change_failure_rate
                 xy=(last_month, last_value),
                 xytext=(10, 0),
                 textcoords='offset points',
-                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                bbox=dict(boxstyle='round,pad=0.5', fc='#FFE873', alpha=0.7),  # Softer yellow
                 arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0'))
     
-    # Add a horizontal line at 10% (industry standard)
-    plt.axhline(y=10, color='gray', linestyle=':', alpha=0.5, label='Industry Standard (10%)')
+    # Add a horizontal line at 10% (industry standard) with a neutral gray
+    plt.axhline(y=10, color='#666666', linestyle=':', alpha=0.5, label='Industry Standard (10%)')
     
     # Customize the plot
     plt.title('Change Failure Rate Trend', pad=20)
