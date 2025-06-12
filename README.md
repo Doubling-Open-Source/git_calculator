@@ -33,6 +33,7 @@ from src import git_ir as gir
 from src.calculators import cycle_time_by_commits_calculator as commit_calc
 from src.calculators import change_failure_calculator as cfc
 from src.calculators import chart_generator as cg
+from src.calculators import commit_analyzer as ca
 
 # Get the data
 logs = gir.git_log()
@@ -45,6 +46,9 @@ cycle_time_data = commit_calc.commit_statistics_normalized_by_month(tds)
 data_by_month = cfc.extract_commit_data(logs)
 failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
 
+# Analyze commit trends by author
+ca.analyze_commits()
+
 # Generate charts and save data
 cg.generate_charts(cycle_time_data=cycle_time_data, 
                   failure_rate_data=failure_rate_data,
@@ -53,11 +57,14 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
 
 4. Check your results:
    - A new `metrics` directory will be created in your repository
-   - You'll find four files with your repository name as prefix:
+   - You'll find several files with your repository name as prefix:
      - `metrics/{repo_name}_cycle_time_data.csv` - Raw cycle time data
      - `metrics/{repo_name}_change_failure_data.csv` - Raw change failure rate data
      - `metrics/{repo_name}_cycle_time_chart.png` - Cycle time chart
      - `metrics/{repo_name}_change_failure_rate_chart.png` - Change failure rate chart
+     - `metrics/commit_trends.png` - Commit trends by author
+     - `metrics/commit_{author}_commits.csv` - Individual author commit data
+     - `metrics/commit_percentiles.csv` - Author commit percentiles
 
 5. To generate new charts later without recalculating:
 ```py
@@ -80,7 +87,10 @@ git-calculator/
 |   ├── git_ir.py        # In memory representation of Git metadata
 │   ├── calculators/
 │   │   ├── cycle_time_calculator_by_branches.py  # Cycle time stats by branch
-│   │   └── cycle_time_calculator_by_commits.py  # Cycle time stats by commit
+│   │   ├── cycle_time_calculator_by_commits.py  # Cycle time stats by commit
+│   │   ├── change_failure_calculator.py         # Change failure rate stats
+│   │   ├── commit_analyzer.py                   # Commit trends by author
+│   │   └── chart_generator.py                   # Chart generation utilities
 │   ├── util/
 │   │   ├── git_util.py  # Helpers for interacting with a Git repo
 │   │   └── toy_repo.py  # Temporary toy repo on the filesystem for testing
@@ -108,7 +118,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-
 # Project Testing
 
 Run unit tests
@@ -118,7 +127,6 @@ pytest -v
 
 For debugging:
 ```export PYTEST_ADDOPTS="--log-cli-level=DEBUG"```
-
 
 # Project Playing Around
 
@@ -138,12 +146,11 @@ result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2
 print(result)
 ```
 
-
 # Project Usage
 
 To calculate statistics for a given repository, proceed with the following sequence.
 
-```
+
 Step one, go to this repo in the terminal and set the python path:
 
 ```sh
@@ -206,61 +213,23 @@ Month,Change Failure Rate (%)
 
 The change failure rate is calculated by identifying commits that contain keywords like "revert", "hotfix", "bugfix", "bug", "fix", "problem", or "issue" in their commit messages. The rate is expressed as a percentage of total commits that required fixes.
 
-# Generating Charts
-
-To generate modern-looking charts with trendlines for both metrics:
-
+To analyze commit trends by author:
 ```py
 # Launch python3 
 python
 # Paste:
-from src import git_ir as gir
-from src.calculators import cycle_time_by_commits_calculator as commit_calc
-from src.calculators import change_failure_calculator as cfc
-from src.calculators import chart_generator as cg
-
-# Get the data
-logs = gir.git_log()
-
-# Calculate cycle time
-tds = commit_calc.calculate_time_deltas(logs)
-cycle_time_data = commit_calc.commit_statistics_normalized_by_month(tds)
-
-# Calculate change failure rate
-data_by_month = cfc.extract_commit_data(logs)
-failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
-
-# Generate charts
-cg.generate_charts(cycle_time_data=cycle_time_data, failure_rate_data=failure_rate_data)
+from src.calculators import commit_analyzer as ca
+ca.analyze_commits()
 ```
 
-This will create two files:
-1. `cycle_time_chart.png` - Shows the average cycle time trend with:
-   - A line showing the average cycle time
-   - A trendline showing the overall direction
-   - A shaded area showing the standard deviation
-   - Clear labels and a modern style
+This will generate:
+- A commit trends chart showing commits over time for each author
+- CSV files with individual author commit data
+- A CSV file with commit percentiles for all authors
 
-2. `change_failure_rate_chart.png` - Shows the change failure rate trend with:
-   - A line showing the failure rate
-   - A trendline showing the overall direction
-   - A reference line at 15% (industry standard)
-   - Clear labels and a modern style
+# Generating Charts
 
-You can also generate just one chart at a time:
-```py
-# Just cycle time
-cg.plot_cycle_time(cycle_time_data)
-
-# Just change failure rate
-cg.plot_change_failure_rate(failure_rate_data)
-```
-
-The charts will be saved as high-resolution PNG files (300 DPI) in your current directory.
-
-# Saving and Loading Metrics Data
-
-You can save the calculated metrics data to CSV files and generate charts from them later:
+To generate modern-looking charts with trendlines for both metrics:
 
 ```py
 # First time: Calculate and save the data
