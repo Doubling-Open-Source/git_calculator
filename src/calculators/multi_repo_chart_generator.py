@@ -470,13 +470,21 @@ class MultiRepoChartGenerator:
             months = []
             throughput_per_dev = []
             
-            for week, commits, active_dev_count, throughput_per_dev_val in throughput_per_active_dev_data:
+            # Sort the data chronologically by week
+            def week_sort_key(item):
+                week_str = item[0]
+                year, week_num = week_str.split('-W')
+                return (int(year), int(week_num))
+            
+            sorted_data = sorted(throughput_per_active_dev_data, key=week_sort_key)
+            
+            for week, commits, active_dev_count, throughput_per_dev_val in sorted_data:
                 # Convert ISO week format (2023-W01) to datetime
                 year, week_num = week.split('-W')
                 year = int(year)
                 week_num = int(week_num)
-                # Get the Monday of the week
-                week_date = datetime.strptime(f"{year}-W{week_num:02d}-1", "%Y-W%W-%w")
+                # Get the Monday of the week using fromisocalendar
+                week_date = datetime.fromisocalendar(year, week_num, 1)
                 months.append(week_date)
                 throughput_per_dev.append(throughput_per_dev_val)
             

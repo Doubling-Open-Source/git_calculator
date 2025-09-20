@@ -254,7 +254,12 @@ class MultiRepoCalculator:
                 weekly_data[week]['total_active_devs'] += active_dev_count
         
         aggregated = []
-        for week in sorted(weekly_data.keys()):
+        # Sort weeks chronologically by converting to datetime for proper sorting
+        def week_sort_key(week_str):
+            year, week_num = week_str.split('-W')
+            return (int(year), int(week_num))
+        
+        for week in sorted(weekly_data.keys(), key=week_sort_key):
             data = weekly_data[week]
             if data['total_active_devs'] > 0:
                 avg_throughput_per_active_dev = data['total_commits'] / data['total_active_devs']

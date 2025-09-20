@@ -45,9 +45,9 @@ def extract_commits_and_authors_by_week(logs):
     for commit in logs:
         author_email = commit._author[0]
         commit_date = datetime.fromtimestamp(commit._when)
-        # Get the Monday of the week (ISO week)
-        week_start = commit_date - timedelta(days=commit_date.weekday())
-        week_key = f"{week_start.year}-W{week_start.isocalendar()[1]:02d}"
+        # Use ISO week format (year-W##)
+        year, week_num, _ = commit_date.isocalendar()
+        week_key = f"{year}-W{week_num:02d}"
         authors_set, commit_count = data_by_week[week_key]
         authors_set.add(author_email)
         data_by_week[week_key] = (authors_set, commit_count + 1)
@@ -188,7 +188,8 @@ def calculate_throughput_per_active_developer_by_week(logs, weeks_back=4):
         week_num = int(week_num)
         
         # Convert ISO week to date (Monday of that week)
-        week_date = datetime.strptime(f"{year}-W{week_num:02d}-1", "%Y-W%W-%w")
+        # Use isocalendar to get the correct Monday
+        week_date = datetime.fromisocalendar(year, week_num, 1)
         cutoff_date = week_date - timedelta(weeks=weeks_back)
         
         # Find developers who committed in the past N weeks from this week
