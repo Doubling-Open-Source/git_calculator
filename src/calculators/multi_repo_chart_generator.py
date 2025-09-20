@@ -103,6 +103,22 @@ class MultiRepoChartGenerator:
                         alpha=0.6, 
                         color=color,
                         linewidth=1)
+                
+                # Add trendline end value label
+                end_value = trendline[-1]
+                end_month = df['Month'].iloc[-1]
+                plt.annotate(f'{end_value:.1f}d', 
+                           xy=(end_month, end_value),
+                           xytext=(5, 5), 
+                           textcoords='offset points',
+                           fontsize=8,
+                           color=color,
+                           alpha=0.8,
+                           bbox=dict(boxstyle='round,pad=0.3', 
+                                   facecolor='white', 
+                                   alpha=0.7,
+                                   edgecolor=color,
+                                   linewidth=0.5))
             
             color_idx += 1
         
