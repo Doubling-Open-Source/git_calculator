@@ -86,13 +86,13 @@ class MultiRepoChartGenerator:
                     markersize=4,
                     alpha=0.8)
             
-            # Add standard deviation shading
+            # Add standard deviation shading (positive direction only)
             plt.fill_between(df['Month'], 
-                           df['P75'] - df['Std'], 
+                           df['P75'], 
                            df['P75'] + df['Std'],
                            alpha=0.2, 
                            color=color,
-                           label=f'{repo_name} (±1σ)')
+                           label=f'{repo_name} (+1σ)')
             
             # Add trendline
             if len(df) > 1:
