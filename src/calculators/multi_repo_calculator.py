@@ -77,11 +77,11 @@ class MultiRepoCalculator:
                 
                 # Calculate active developers
                 authors_by_month = adc.extract_authors(logs)
-                active_dev_data = adc.monthly_author_statistics(authors_by_month)
+                active_dev_data = [(month, authors_set, len(authors_set)) for month, authors_set in authors_by_month.items()]
                 
                 # Calculate throughput
                 commits_and_authors = tc.extract_commits_and_authors(logs)
-                throughput_data = tc.calculate_throughput(commits_and_authors)
+                throughput_data = [(month, authors_set, commit_count) for month, (authors_set, commit_count) in commits_and_authors.items()]
                 
                 # Calculate commit trends
                 commits_by_author = ca.extract_commits_by_author(logs)
