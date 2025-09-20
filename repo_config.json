@@ -1,0 +1,21 @@
+{
+  "repositories": [
+    {
+      "name": "repo1",
+      "path_or_url": "/path/to/local/repo1",
+      "branch": "main",
+      "description": "First repository for analysis"
+    },
+    {
+      "name": "repo2",
+      "path_or_url": "https://github.com/user/repo2.git",
+      "branch": "develop",
+      "description": "Second repository from GitHub"
+    },
+    {
+      "name": "repo3",
+      "path_or_url": "git@github.com:user/repo3.git",
+      "description": "Third repository via SSH"
+    }
+  ]
+}

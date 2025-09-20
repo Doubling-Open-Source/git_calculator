@@ -291,3 +291,241 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
 ```
 
 This is useful when you want to compare metrics across different teams or time periods.
+
+# Multi-Repository Analysis
+
+The git-calculator now supports analyzing multiple repositories simultaneously, allowing you to compare DORA metrics across different projects, teams, or time periods.
+
+## Command Line Interface
+
+The easiest way to use multi-repository analysis is through the command-line interface:
+
+### Single Repository Analysis
+
+```bash
+# Analyze a single repository
+python -m src.cli single /path/to/repo
+
+# Specify custom output directory
+python -m src.cli single /path/to/repo --output my_analysis
+```
+
+### Multiple Repository Analysis
+
+1. **Create a repository configuration file:**
+
+```bash
+# Create a sample configuration file
+python -m src.cli config --create-sample
+```
+
+This creates a `repo_config.json` file with the following structure:
+
+```json
+{
+  "repositories": [
+    {
+      "name": "frontend-app",
+      "path_or_url": "/path/to/local/frontend",
+      "branch": "main",
+      "description": "Frontend application repository"
+    },
+    {
+      "name": "backend-api", 
+      "path_or_url": "https://github.com/company/backend-api.git",
+      "branch": "develop",
+      "description": "Backend API repository"
+    },
+    {
+      "name": "mobile-app",
+      "path_or_url": "git@github.com:company/mobile-app.git",
+      "description": "Mobile application repository"
+    }
+  ]
+}
+```
+
+2. **Analyze multiple repositories:**
+
+```bash
+# Analyze repositories from config file
+python -m src.cli multi --config repo_config.json
+
+# Update repositories before analysis
+python -m src.cli multi --config repo_config.json --update
+
+# Specify custom output directory
+python -m src.cli multi --config repo_config.json --output team_analysis
+```
+
+### Configuration Options
+
+The repository configuration supports:
+
+- **Local paths**: `/path/to/local/repo`
+- **HTTPS URLs**: `https://github.com/user/repo.git`
+- **SSH URLs**: `git@github.com:user/repo.git`
+- **Specific branches**: `"branch": "develop"`
+- **Descriptions**: `"description": "Project description"`
+
+## Programmatic Multi-Repository Analysis
+
+You can also use the multi-repository functionality programmatically:
+
+```python
+from src.multi_repo_manager import MultiRepoManager
+from src.calculators.multi_repo_calculator import MultiRepoCalculator
+from src.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+
+# Initialize repository manager
+with MultiRepoManager() as repo_manager:
+    # Add repositories
+    repo_manager.add_repository("frontend", "/path/to/frontend")
+    repo_manager.add_repository("backend", "https://github.com/user/backend.git")
+    repo_manager.add_repository("mobile", "git@github.com:user/mobile.git")
+    
+    # Clone remote repositories
+    clone_results = repo_manager.clone_repositories()
+    print(f"Clone results: {clone_results}")
+    
+    # Calculate metrics for all repositories
+    calculator = MultiRepoCalculator(repo_manager)
+    all_metrics = calculator.calculate_all_metrics()
+    
+    # Save aggregated metrics
+    calculator.save_aggregated_metrics(all_metrics, "multi_repo_metrics")
+    
+    # Generate comparison charts
+    chart_generator = MultiRepoChartGenerator("multi_repo_charts")
+    generated_charts = chart_generator.generate_all_comparison_charts(all_metrics)
+    
+    print(f"Generated {len(generated_charts)} comparison charts")
+```
+
+## Multi-Repository Output
+
+When analyzing multiple repositories, the tool creates:
+
+### Directory Structure
+```
+multi_repo_analysis/
+├── metrics/
+│   ├── frontend_metrics.json
+│   ├── backend_metrics.json
+│   ├── mobile_metrics.json
+│   ├── aggregated_cycle_time.csv
+│   ├── aggregated_failure_rate.csv
+│   ├── aggregated_active_developers.csv
+│   ├── aggregated_throughput.csv
+│   └── summary_report.json
+└── charts/
+    ├── cycle_time_comparison.png
+    ├── failure_rate_comparison.png
+    ├── active_developers_comparison.png
+    ├── throughput_comparison.png
+    └── repository_summary.png
+```
+
+### Individual Repository Metrics
+Each repository gets its own JSON file with detailed metrics:
+- Cycle time data (monthly)
+- Change failure rate data (monthly)
+- Active developers data (monthly)
+- Throughput data (monthly)
+- Commit percentiles
+- Total commits and authors
+- Date range of analysis
+
+### Aggregated Metrics
+- **aggregated_cycle_time.csv**: Average cycle time across all repositories
+- **aggregated_failure_rate.csv**: Average change failure rate across all repositories
+- **aggregated_active_developers.csv**: Total unique active developers across all repositories
+- **aggregated_throughput.csv**: Total commits across all repositories
+
+### Comparison Charts
+- **cycle_time_comparison.png**: Line chart comparing cycle time trends across repositories
+- **failure_rate_comparison.png**: Line chart comparing change failure rates across repositories
+- **active_developers_comparison.png**: Line chart comparing active developer counts across repositories
+- **throughput_comparison.png**: Line chart comparing commit throughput across repositories
+- **repository_summary.png**: Bar charts showing key metrics comparison across repositories
+
+### Summary Report
+The `summary_report.json` contains:
+- Total number of repositories analyzed
+- Total commits across all repositories
+- Total unique authors across all repositories
+- Date ranges for each repository
+- Individual repository summaries with key metrics
+
+## Advanced Usage
+
+### Custom Workspace Directory
+
+```python
+# Use a custom workspace for cloned repositories
+with MultiRepoManager(workspace_dir="/tmp/my_analysis") as repo_manager:
+    # ... analysis code ...
+```
+
+### Repository Context Management
+
+```python
+# Temporarily work with a specific repository
+with repo_manager.repository_context("frontend"):
+    logs = git_log()
+    # ... perform analysis ...
+```
+
+### Selective Analysis
+
+```python
+# Calculate metrics for specific repositories only
+calculator = MultiRepoCalculator(repo_manager)
+frontend_metrics = calculator.calculate_repo_metrics("frontend")
+backend_metrics = calculator.calculate_repo_metrics("backend")
+
+# Generate charts for specific repositories
+selected_metrics = {
+    "frontend": frontend_metrics,
+    "backend": backend_metrics
+}
+chart_generator.generate_all_comparison_charts(selected_metrics)
+```
+
+## Use Cases
+
+Multi-repository analysis is particularly useful for:
+
+1. **Team Comparison**: Compare DORA metrics across different development teams
+2. **Project Comparison**: Analyze performance across different projects or products
+3. **Technology Stack Analysis**: Compare metrics between different technology stacks
+4. **Time Period Analysis**: Compare metrics across different time periods
+5. **Merger/Acquisition Analysis**: Analyze metrics before and after organizational changes
+6. **Benchmarking**: Establish baseline metrics across multiple repositories
+
+## Performance Considerations
+
+- **Large Repositories**: Analysis time scales with repository size and commit history
+- **Network Operations**: Cloning remote repositories requires network access
+- **Memory Usage**: Multiple repositories may require significant memory for analysis
+- **Caching**: Metrics are cached to avoid recalculation during the same session
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Repository Access**: Ensure you have access to all repositories (SSH keys, authentication)
+2. **Branch Availability**: Verify that specified branches exist in remote repositories
+3. **Disk Space**: Ensure sufficient disk space for cloning repositories
+4. **Permissions**: Check file system permissions for output directories
+
+### Debug Mode
+
+```bash
+# Enable verbose logging
+python -m src.cli multi --config repo_config.json --verbose
+```
+
+### Error Handling
+
+The tool provides detailed error messages and continues processing other repositories even if some fail. Check the logs for specific error details.
