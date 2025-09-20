@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from src.git_ir import git_log, format_git_logs_as_string
 from collections import defaultdict
@@ -78,6 +78,70 @@ def write_throughput_stats_to_file(throughput_stats, fname='throughput_by_month.
         fout.write(stats_string)
     if fname.endswith('.csv'):
         sp_run(['open', fname])
+
+def get_active_developers(logs, weeks_back=4):
+    """
+    Get developers who have made commits in the past N weeks.
+    
+    Args:
+        logs (list): List of commit logs.
+        weeks_back (int): Number of weeks to look back for active developers.
+        
+    Returns:
+        set: Set of active developer email addresses.
+    """
+    cutoff_date = datetime.now() - timedelta(weeks=weeks_back)
+    active_developers = set()
+    
+    for commit in logs:
+        commit_date = datetime.fromtimestamp(commit._when)
+        if commit_date >= cutoff_date:
+            author_email = commit._author[0]
+            active_developers.add(author_email)
+    
+    return active_developers
+
+def calculate_throughput_per_active_developer(logs, weeks_back=4):
+    """
+    Calculate throughput normalized by active developers (those who committed in past N weeks from each month).
+    
+    Args:
+        logs (list): List of commit logs.
+        weeks_back (int): Number of weeks to look back for active developers.
+        
+    Returns:
+        dict: Dictionary with months as keys and tuples (commits, active_dev_count, throughput_per_active_dev) as values.
+    """
+    # Extract commits by month
+    data_by_month = extract_commits_and_authors(logs)
+    
+    # Calculate normalized throughput for each month
+    normalized_throughput = {}
+    for month, (authors, commit_count) in data_by_month.items():
+        # For each month, find developers who were active in the past N weeks from that month
+        month_year, month_num = month.split('-')
+        month_date = datetime(int(month_year), int(month_num), 1)
+        cutoff_date = month_date - timedelta(weeks=weeks_back)
+        
+        # Find developers who committed in the past N weeks from this month
+        active_developers_for_month = set()
+        for commit in logs:
+            commit_date = datetime.fromtimestamp(commit._when)
+            if commit_date >= cutoff_date and commit_date <= month_date:
+                author_email = commit._author[0]
+                active_developers_for_month.add(author_email)
+        
+        # Count how many of the authors in this month are active developers
+        active_authors_in_month = len(authors.intersection(active_developers_for_month))
+        
+        if active_authors_in_month > 0:
+            throughput_per_active_dev = commit_count / active_authors_in_month
+        else:
+            throughput_per_active_dev = 0
+            
+        normalized_throughput[month] = (commit_count, active_authors_in_month, throughput_per_active_dev)
+    
+    return normalized_throughput
 
 def monthly_throughput_analysis():
     """

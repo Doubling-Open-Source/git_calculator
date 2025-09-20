@@ -444,6 +444,61 @@ class MultiRepoChartGenerator:
         logger.info(f"Generated repository summary chart: {output_path}")
         return output_path
     
+    def plot_throughput_per_active_dev_comparison(self, metrics: Dict[str, Dict[str, Any]], filename: str = "throughput_per_active_dev_comparison.png") -> str:
+        """
+        Plot throughput per active developer comparison across repositories.
+        
+        Args:
+            metrics: Dict of repository metrics
+            filename: Output filename
+            
+        Returns:
+            Path to the generated chart file
+        """
+        setup_plot_style()
+        
+        fig, ax = plt.subplots(figsize=(14, 8))
+        
+        colors = plt.cm.viridis(np.linspace(0, 1, len(metrics)))
+        
+        for i, (repo_name, repo_metrics) in enumerate(metrics.items()):
+            throughput_per_active_dev_data = repo_metrics.get('throughput_per_active_dev_data', [])
+            
+            if not throughput_per_active_dev_data:
+                continue
+                
+            months = []
+            throughput_per_dev = []
+            
+            for month, commits, active_dev_count, throughput_per_dev_val in throughput_per_active_dev_data:
+                months.append(pd.to_datetime(month, format='%Y-%m'))
+                throughput_per_dev.append(throughput_per_dev_val)
+            
+            if months:
+                ax.plot(months, throughput_per_dev, 'o-', 
+                       label=f'{repo_name}', 
+                       linewidth=2, 
+                       color=colors[i],
+                       markersize=4,
+                       alpha=0.8)
+        
+        ax.set_title('Throughput Per Active Developer Comparison Across Repositories', pad=20, fontsize=14)
+        ax.set_xlabel('Month', fontsize=12)
+        ax.set_ylabel('Commits Per Active Developer', fontsize=12)
+        ax.tick_params(axis='x', rotation=45)
+        ax.legend(title='Repository', bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.grid(True, alpha=0.3)
+        ax.set_ylim(bottom=0)
+        
+        plt.tight_layout()
+        
+        filepath = os.path.join(self.output_dir, filename)
+        fig.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close(fig)
+        
+        logger.info(f"Generated throughput per active developer comparison chart: {filepath}")
+        return filepath
+    
     def generate_all_comparison_charts(self, metrics: Dict[str, Dict[str, Any]]) -> List[str]:
         """
         Generate all comparison charts for the given metrics.
@@ -483,6 +538,13 @@ class MultiRepoChartGenerator:
             generated_charts.append(chart_path)
         except Exception as e:
             logger.error(f"Failed to generate throughput comparison chart: {e}")
+        
+        try:
+            # Throughput per active developer comparison
+            chart_path = self.plot_throughput_per_active_dev_comparison(metrics)
+            generated_charts.append(chart_path)
+        except Exception as e:
+            logger.error(f"Failed to generate throughput per active developer comparison chart: {e}")
         
         try:
             # Repository summary

@@ -83,6 +83,11 @@ class MultiRepoCalculator:
                 commits_and_authors = tc.extract_commits_and_authors(logs)
                 throughput_data = [(month, authors_set, commit_count) for month, (authors_set, commit_count) in commits_and_authors.items()]
                 
+                # Calculate throughput per active developer (past 4 weeks)
+                normalized_throughput_data = tc.calculate_throughput_per_active_developer(logs, weeks_back=4)
+                throughput_per_active_dev_data = [(month, commits, active_dev_count, throughput_per_dev) 
+                                                 for month, (commits, active_dev_count, throughput_per_dev) in normalized_throughput_data.items()]
+                
                 # Calculate commit trends
                 commits_by_author = ca.extract_commits_by_author(logs)
                 commit_percentiles = ca.calculate_percentiles(commits_by_author)
@@ -93,6 +98,7 @@ class MultiRepoCalculator:
                     'failure_rate_data': failure_rate_data,
                     'active_dev_data': active_dev_data,
                     'throughput_data': throughput_data,
+                    'throughput_per_active_dev_data': throughput_per_active_dev_data,
                     'commit_percentiles': commit_percentiles,
                     'total_commits': len(logs),
                     'total_authors': len(set(log._author[0] for log in logs)),
@@ -229,6 +235,35 @@ class MultiRepoCalculator:
         
         return aggregated
     
+    def aggregate_throughput_per_active_dev_metrics(self, metrics: Dict[str, Dict[str, Any]]) -> List[Tuple[str, float]]:
+        """
+        Aggregate throughput per active developer metrics across repositories.
+        
+        Args:
+            metrics: Dict of repository metrics
+            
+        Returns:
+            List of tuples (month, average_throughput_per_active_dev)
+        """
+        monthly_data = defaultdict(lambda: {'total_commits': 0, 'total_active_devs': 0})
+        
+        for repo_name, repo_metrics in metrics.items():
+            throughput_per_active_dev_data = repo_metrics.get('throughput_per_active_dev_data', [])
+            for month, commits, active_dev_count, throughput_per_dev in throughput_per_active_dev_data:
+                monthly_data[month]['total_commits'] += commits
+                monthly_data[month]['total_active_devs'] += active_dev_count
+        
+        aggregated = []
+        for month in sorted(monthly_data.keys()):
+            data = monthly_data[month]
+            if data['total_active_devs'] > 0:
+                avg_throughput_per_active_dev = data['total_commits'] / data['total_active_devs']
+            else:
+                avg_throughput_per_active_dev = 0
+            aggregated.append((month, avg_throughput_per_active_dev))
+        
+        return aggregated
+    
     def generate_summary_report(self, metrics: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
         """
         Generate a summary report across all repositories.
@@ -295,6 +330,7 @@ class MultiRepoCalculator:
         aggregated_failure_rate = self.aggregate_failure_rate_metrics(metrics)
         aggregated_active_devs = self.aggregate_active_developers_metrics(metrics)
         aggregated_throughput = self.aggregate_throughput_metrics(metrics)
+        aggregated_throughput_per_active_dev = self.aggregate_throughput_per_active_dev_metrics(metrics)
         
         # Save aggregated data as CSV
         if aggregated_cycle_time:
@@ -316,6 +352,11 @@ class MultiRepoCalculator:
             df_throughput = pd.DataFrame(aggregated_throughput, 
                                        columns=['Month', 'Commits'])
             df_throughput.to_csv(os.path.join(output_dir, 'aggregated_throughput.csv'), index=False)
+        
+        if aggregated_throughput_per_active_dev:
+            df_throughput_per_dev = pd.DataFrame(aggregated_throughput_per_active_dev, 
+                                               columns=['Month', 'ThroughputPerActiveDev'])
+            df_throughput_per_dev.to_csv(os.path.join(output_dir, 'aggregated_throughput_per_active_dev.csv'), index=False)
         
         # Save summary report
         summary = self.generate_summary_report(metrics)
