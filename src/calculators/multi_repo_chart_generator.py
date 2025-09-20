@@ -78,13 +78,21 @@ class MultiRepoChartGenerator:
             
             color = self.colors[color_idx % len(self.colors)]
             
-            # Plot P75 cycle time
+            # Plot P75 cycle time with standard deviation shading
             plt.plot(df['Month'], df['P75'], 'o-', 
                     label=f'{repo_name} (P75)', 
                     linewidth=2, 
                     color=color,
                     markersize=4,
                     alpha=0.8)
+            
+            # Add standard deviation shading
+            plt.fill_between(df['Month'], 
+                           df['P75'] - df['Std'], 
+                           df['P75'] + df['Std'],
+                           alpha=0.2, 
+                           color=color,
+                           label=f'{repo_name} (±1σ)')
             
             # Add trendline
             if len(df) > 1:
