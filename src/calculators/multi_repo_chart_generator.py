@@ -470,8 +470,14 @@ class MultiRepoChartGenerator:
             months = []
             throughput_per_dev = []
             
-            for month, commits, active_dev_count, throughput_per_dev_val in throughput_per_active_dev_data:
-                months.append(pd.to_datetime(month, format='%Y-%m'))
+            for week, commits, active_dev_count, throughput_per_dev_val in throughput_per_active_dev_data:
+                # Convert ISO week format (2023-W01) to datetime
+                year, week_num = week.split('-W')
+                year = int(year)
+                week_num = int(week_num)
+                # Get the Monday of the week
+                week_date = datetime.strptime(f"{year}-W{week_num:02d}-1", "%Y-W%W-%w")
+                months.append(week_date)
                 throughput_per_dev.append(throughput_per_dev_val)
             
             if months:
@@ -482,9 +488,9 @@ class MultiRepoChartGenerator:
                        markersize=4,
                        alpha=0.8)
         
-        ax.set_title('Throughput Per Active Developer Comparison Across Repositories', pad=20, fontsize=14)
-        ax.set_xlabel('Month', fontsize=12)
-        ax.set_ylabel('Commits Per Active Developer', fontsize=12)
+        ax.set_title('Throughput Per Active Developer Comparison Across Repositories (Weekly)', pad=20, fontsize=14)
+        ax.set_xlabel('Week', fontsize=12)
+        ax.set_ylabel('Commits Per Active Developer Per Week', fontsize=12)
         ax.tick_params(axis='x', rotation=45)
         ax.legend(title='Repository', bbox_to_anchor=(1.05, 1), loc='upper left')
         ax.grid(True, alpha=0.3)

@@ -83,10 +83,10 @@ class MultiRepoCalculator:
                 commits_and_authors = tc.extract_commits_and_authors(logs)
                 throughput_data = [(month, authors_set, commit_count) for month, (authors_set, commit_count) in commits_and_authors.items()]
                 
-                # Calculate throughput per active developer (past 4 weeks)
-                normalized_throughput_data = tc.calculate_throughput_per_active_developer(logs, weeks_back=4)
-                throughput_per_active_dev_data = [(month, commits, active_dev_count, throughput_per_dev) 
-                                                 for month, (commits, active_dev_count, throughput_per_dev) in normalized_throughput_data.items()]
+                # Calculate throughput per active developer (past 4 weeks) - weekly granularity
+                normalized_throughput_data = tc.calculate_throughput_per_active_developer_by_week(logs, weeks_back=4)
+                throughput_per_active_dev_data = [(week, commits, active_dev_count, throughput_per_dev) 
+                                                 for week, (commits, active_dev_count, throughput_per_dev) in normalized_throughput_data.items()]
                 
                 # Calculate commit trends
                 commits_by_author = ca.extract_commits_by_author(logs)
@@ -237,30 +237,30 @@ class MultiRepoCalculator:
     
     def aggregate_throughput_per_active_dev_metrics(self, metrics: Dict[str, Dict[str, Any]]) -> List[Tuple[str, float]]:
         """
-        Aggregate throughput per active developer metrics across repositories.
+        Aggregate throughput per active developer metrics across repositories (weekly granularity).
         
         Args:
             metrics: Dict of repository metrics
             
         Returns:
-            List of tuples (month, average_throughput_per_active_dev)
+            List of tuples (week, average_throughput_per_active_dev)
         """
-        monthly_data = defaultdict(lambda: {'total_commits': 0, 'total_active_devs': 0})
+        weekly_data = defaultdict(lambda: {'total_commits': 0, 'total_active_devs': 0})
         
         for repo_name, repo_metrics in metrics.items():
             throughput_per_active_dev_data = repo_metrics.get('throughput_per_active_dev_data', [])
-            for month, commits, active_dev_count, throughput_per_dev in throughput_per_active_dev_data:
-                monthly_data[month]['total_commits'] += commits
-                monthly_data[month]['total_active_devs'] += active_dev_count
+            for week, commits, active_dev_count, throughput_per_dev in throughput_per_active_dev_data:
+                weekly_data[week]['total_commits'] += commits
+                weekly_data[week]['total_active_devs'] += active_dev_count
         
         aggregated = []
-        for month in sorted(monthly_data.keys()):
-            data = monthly_data[month]
+        for week in sorted(weekly_data.keys()):
+            data = weekly_data[week]
             if data['total_active_devs'] > 0:
                 avg_throughput_per_active_dev = data['total_commits'] / data['total_active_devs']
             else:
                 avg_throughput_per_active_dev = 0
-            aggregated.append((month, avg_throughput_per_active_dev))
+            aggregated.append((week, avg_throughput_per_active_dev))
         
         return aggregated
     
@@ -355,7 +355,7 @@ class MultiRepoCalculator:
         
         if aggregated_throughput_per_active_dev:
             df_throughput_per_dev = pd.DataFrame(aggregated_throughput_per_active_dev, 
-                                               columns=['Month', 'ThroughputPerActiveDev'])
+                                               columns=['Week', 'ThroughputPerActiveDev'])
             df_throughput_per_dev.to_csv(os.path.join(output_dir, 'aggregated_throughput_per_active_dev.csv'), index=False)
         
         # Save summary report
