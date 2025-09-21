@@ -212,6 +212,44 @@ def calculate_throughput_per_active_developer_by_week(logs, weeks_back=4):
     
     return normalized_throughput
 
+def calculate_active_developers_by_week(logs, weeks_back=4):
+    """
+    Calculate active developers by week, where active means they made commits in the past N weeks.
+    
+    Args:
+        logs (list): List of commit logs.
+        weeks_back (int): Number of weeks to look back for active developers.
+        
+    Returns:
+        dict: Dictionary with weeks as keys and tuples (commits, active_dev_count, active_dev_emails) as values.
+    """
+    # Extract commits by week
+    data_by_week = extract_commits_and_authors_by_week(logs)
+    
+    # Calculate active developers for each week
+    active_dev_by_week = {}
+    for week, (authors, commit_count) in data_by_week.items():
+        # For each week, find developers who were active in the past N weeks from that week
+        year, week_num = week.split('-W')
+        year = int(year)
+        week_num = int(week_num)
+        
+        # Convert ISO week to date (Monday of that week)
+        week_date = datetime.fromisocalendar(year, week_num, 1)
+        cutoff_date = week_date - timedelta(weeks=weeks_back)
+        
+        # Find developers who committed in the past N weeks from this week
+        active_developers_for_week = set()
+        for commit in logs:
+            commit_date = datetime.fromtimestamp(commit._when)
+            if commit_date >= cutoff_date and commit_date <= week_date + timedelta(days=7):
+                author_email = commit._author[0]
+                active_developers_for_week.add(author_email)
+        
+        active_dev_by_week[week] = (commit_count, len(active_developers_for_week), active_developers_for_week)
+    
+    return active_dev_by_week
+
 def monthly_throughput_analysis():
     """
     Main function to calculate and write monthly throughput statistics.

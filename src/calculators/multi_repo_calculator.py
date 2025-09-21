@@ -88,6 +88,11 @@ class MultiRepoCalculator:
                 throughput_per_active_dev_data = [(week, commits, active_dev_count, throughput_per_dev) 
                                                  for week, (commits, active_dev_count, throughput_per_dev) in normalized_throughput_data.items()]
                 
+                # Calculate active developers by week (past 4 weeks)
+                active_dev_by_week_data = tc.calculate_active_developers_by_week(logs, weeks_back=4)
+                active_dev_weekly_data = [(week, commits, active_dev_count, active_dev_emails) 
+                                         for week, (commits, active_dev_count, active_dev_emails) in active_dev_by_week_data.items()]
+                
                 # Calculate commit trends
                 commits_by_author = ca.extract_commits_by_author(logs)
                 commit_percentiles = ca.calculate_percentiles(commits_by_author)
@@ -99,6 +104,7 @@ class MultiRepoCalculator:
                     'active_dev_data': active_dev_data,
                     'throughput_data': throughput_data,
                     'throughput_per_active_dev_data': throughput_per_active_dev_data,
+                    'active_dev_weekly_data': active_dev_weekly_data,
                     'commit_percentiles': commit_percentiles,
                     'total_commits': len(logs),
                     'total_authors': len(set(log._author[0] for log in logs)),
@@ -245,13 +251,21 @@ class MultiRepoCalculator:
         Returns:
             List of tuples (week, average_throughput_per_active_dev)
         """
-        weekly_data = defaultdict(lambda: {'total_commits': 0, 'total_active_devs': 0})
+        weekly_data = defaultdict(lambda: {'total_commits': 0, 'unique_active_devs': set()})
         
         for repo_name, repo_metrics in metrics.items():
             throughput_per_active_dev_data = repo_metrics.get('throughput_per_active_dev_data', [])
             for week, commits, active_dev_count, throughput_per_dev in throughput_per_active_dev_data:
                 weekly_data[week]['total_commits'] += commits
-                weekly_data[week]['total_active_devs'] += active_dev_count
+                # Note: We can't get the actual email set from this data structure
+                # We need to modify the data structure to include the email set
+        
+        # For now, let's use a different approach - calculate unique active devs across repos
+        weekly_unique_devs = defaultdict(set)
+        for repo_name, repo_metrics in metrics.items():
+            active_dev_weekly_data = repo_metrics.get('active_dev_weekly_data', [])
+            for week, commits, active_dev_count, active_dev_emails in active_dev_weekly_data:
+                weekly_unique_devs[week].update(active_dev_emails)
         
         aggregated = []
         # Sort weeks chronologically by converting to datetime for proper sorting
@@ -261,8 +275,9 @@ class MultiRepoCalculator:
         
         for week in sorted(weekly_data.keys(), key=week_sort_key):
             data = weekly_data[week]
-            if data['total_active_devs'] > 0:
-                avg_throughput_per_active_dev = data['total_commits'] / data['total_active_devs']
+            unique_dev_count = len(weekly_unique_devs[week])
+            if unique_dev_count > 0:
+                avg_throughput_per_active_dev = data['total_commits'] / unique_dev_count
             else:
                 avg_throughput_per_active_dev = 0
             aggregated.append((week, avg_throughput_per_active_dev))
