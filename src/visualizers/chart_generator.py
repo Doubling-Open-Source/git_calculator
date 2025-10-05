@@ -247,6 +247,73 @@ def plot_change_failure_rate(failure_rate_data, output_file='change_failure_rate
     plt.savefig(os.path.join(metrics_dir, output_file), dpi=300, bbox_inches='tight')
     plt.close()
 
+def plot_work_categories(client_name, csv_filename=None, title=None):
+    """Generate a stacked bar chart for work categories over time."""
+    setup_plot_style()
+    
+    # Determine CSV path
+    if csv_filename:
+        csv_path = f'clients/{client_name}/{csv_filename}'
+    else:
+        csv_path = f'clients/{client_name}/{client_name}_work_categories.csv'
+    
+    # Read the CSV
+    df = pd.read_csv(csv_path)
+    
+    # Convert Month to datetime
+    df['Month'] = pd.to_datetime(df['Month'], format='%Y-%m')
+    
+    # Auto-detect categories (exclude Month, Total)
+    exclude_cols = ['Month', 'Total']
+    categories = [col for col in df.columns if col not in exclude_cols]
+    
+    # Define colors to match the style of chart_generator.py
+    colors = [
+        '#5cb85c',  # Green for "New Features"
+        '#f0ad4e',  # Orange for "Improve things"  
+        '#5bc0de',  # Blue for "Productivity"
+        '#d9534f',  # Red for "KTLO"
+        '#999999',  # Gray for "Uncategorized"
+    ]
+    
+    # Create the plot
+    plt.figure(figsize=(12, 6))
+    
+    # Prepare data for stacked bar chart
+    bottom = np.zeros(len(df))
+    
+    for i, category in enumerate(categories):
+        color = colors[i % len(colors)]
+        plt.bar(df['Month'], df[category], bottom=bottom, 
+                label=category, color=color, width=20, alpha=0.6)
+        bottom += df[category]
+    
+    # Customize the plot
+    plt.title(title or f'Work Categories Distribution - {client_name.replace("_", " ").title()}', pad=20)
+    plt.xlabel('Month')
+    plt.ylabel('Percentage (%)')
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+    
+    # Format x-axis
+    plt.gca().xaxis.set_major_locator(plt.matplotlib.dates.MonthLocator())
+    plt.gca().xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%Y-%m'))
+    plt.xticks(rotation=45)
+    
+    # Set y-axis to 0-100
+    plt.ylim(0, 100)
+    plt.yticks(np.arange(0, 101, 10))
+    
+    plt.tight_layout()
+    
+    # Save to client directory
+    output_dir = f'clients/{client_name}/outputs'
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, 'work_categories_chart.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Chart saved to {output_file}")
+
 def generate_charts(cycle_time_data=None, failure_rate_data=None, save_data=False, prefix=None):
     """
     Generate charts for both metrics if data is provided.
