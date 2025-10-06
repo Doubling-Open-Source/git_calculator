@@ -15,7 +15,7 @@ from datetime import datetime
 from collections import defaultdict
 import logging
 
-from src.calculators.chart_generator import setup_plot_style, ensure_metrics_dir
+from src.visualizers.chart_generator import setup_plot_style, ensure_metrics_dir
 
 # Configure logging
 logging.basicConfig(

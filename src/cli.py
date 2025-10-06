@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from src.multi_repo_manager import MultiRepoManager
 from src.calculators.multi_repo_calculator import MultiRepoCalculator
-from src.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
-from src.calculators.chart_generator import generate_charts
+from src.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
+from src.visualizers.chart_generator import generate_charts
 from src import git_ir as gir
 from src.calculators import (
     cycle_time_by_commits_calculator as cycle_calc,

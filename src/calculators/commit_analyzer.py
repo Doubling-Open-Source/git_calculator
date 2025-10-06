@@ -7,7 +7,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from src.git_ir import git_log, format_git_logs_as_string
-from src.calculators.chart_generator import setup_plot_style, ensure_metrics_dir
+from src.visualizers.chart_generator import setup_plot_style, ensure_metrics_dir
 
 logging.basicConfig(
     level=logging.DEBUG,

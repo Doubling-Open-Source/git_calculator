@@ -334,3 +334,88 @@ def generate_charts(cycle_time_data=None, failure_rate_data=None, save_data=Fals
         plot_cycle_time(cycle_time_data, f'{prefix}cycle_time_chart.png')
     if failure_rate_data:
         plot_change_failure_rate(failure_rate_data, f'{prefix}change_failure_rate_chart.png') 
+
+def plot_sprint_completion(client_name, csv_filename=None, title=None):
+    """Generate a chart for weekly sprint completion rates."""
+    setup_plot_style()
+    
+    # Determine CSV path
+    if csv_filename:
+        csv_path = f'clients/{client_name}/metrics/{csv_filename}'
+    else:
+        csv_path = f'clients/{client_name}/metrics/{client_name}_sprint_completion.csv'
+    
+    # Read the CSV
+    df = pd.read_csv(csv_path)
+    
+    # Sort by Week column (ISO format sorts naturally)
+    df = df.sort_values('Week')
+    df = df.reset_index(drop=True)
+    
+    # Create the plot
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    
+    # Create second y-axis for committed/completed bars
+    ax2 = ax1.twinx()
+    
+    # Plot completion percentage as line
+    color = '#4B8BBE'  # Blue from cycle time charts
+    ax1.plot(df['Week'], df['Percentage Completed'], 'o-', 
+             color=color, linewidth=2, markersize=8, 
+             markerfacecolor='white', markeredgewidth=2,
+             label='Completion Rate')
+    
+    # Add percentage values on points
+    for i, (week, pct) in enumerate(zip(df['Week'], df['Percentage Completed'])):
+        ax1.annotate(f'{pct}%', 
+                    xy=(i, pct), 
+                    xytext=(0, 10),
+                    textcoords='offset points',
+                    ha='center',
+                    fontsize=10)
+    
+    # Set up primary y-axis (percentage)
+    ax1.set_xlabel('Week')
+    ax1.set_ylabel('Completion Rate (%)', color=color)
+    ax1.tick_params(axis='y', labelcolor=color)
+    ax1.set_ylim(0, 100)
+    ax1.set_yticks(np.arange(0, 101, 10))
+    
+    # Plot committed and completed as grouped bars
+    x = np.arange(len(df))
+    width = 0.35
+    
+    bars1 = ax2.bar(x - width/2, df['Committed'], width, 
+                    label='Committed', color='#f0ad4e', alpha=0.6)
+    bars2 = ax2.bar(x + width/2, df['Completed'], width,
+                    label='Completed', color='#5cb85c', alpha=0.6)
+    
+    # Set up secondary y-axis (issue count)
+    ax2.set_ylabel('Issue Count')
+    ax2.set_ylim(0, max(df['Committed'].max(), df['Completed'].max()) * 1.1)
+    
+    # Add target line at 80%
+    ax1.axhline(y=80, color='#666666', linestyle=':', alpha=0.5, label='Target (80%)')
+    
+    # Customize x-axis
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(df['Week'], rotation=45, ha='right')
+    
+    # Title and legends
+    plt.title(title or 'Sprint Completion Rate', pad=20)
+    
+    # Combine legends
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='best')
+    
+    plt.tight_layout()
+    
+    # Save to client directory
+    output_dir = f'clients/{client_name}/charts'
+    os.makedirs(output_dir, exist_ok=True)
+    output_file = os.path.join(output_dir, 'sprint_completion_chart.png')
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    print(f"Chart saved to {output_file}") 
