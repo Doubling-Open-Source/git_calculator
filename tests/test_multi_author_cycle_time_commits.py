@@ -7,6 +7,7 @@ import os
 from src.calculators.cycle_time_by_commits_calculator import commit_statistics, calculate_time_deltas, commit_statistics_to_string
 import numpy as np
 from src.git_ir import git_log
+from src.util.date_util import expected_for_comparison
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -60,7 +61,7 @@ def test_cycle_time_between_commits_by_author_no_deviation(temp_directory):
     expected= [('Fri Sep 29 00:00:00 2023', 161280.0, 40320.0, 40320, 0), 
                ('Fri Oct 27 00:00:00 2023', 161280.0, 40320.0, 40320, 0)]
     
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
 
 def test_cycle_time_between_commits_by_author_no_deviation_clustered(temp_directory):
     """
@@ -101,8 +102,7 @@ def test_cycle_time_between_commits_by_author_no_deviation_clustered(temp_direct
     # The standard deviation is: 0 minutes
 
     expected = [('Fri Sep  8 00:00:00 2023', 5760.0, 1440.0, 1440, 0), ('Sat Sep  9 00:00:00 2023', 5760.0, 1440.0, 1440, 0)]
-
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
 
 
 def test_cycle_time_between_commits_by_author_small_deviation(temp_directory):
@@ -142,8 +142,7 @@ def test_cycle_time_between_commits_by_author_small_deviation(temp_directory):
     logging.debug('======= result =======: \n%s', result)
 
     expected = [('Tue Sep 26 00:00:00 2023', 120960.0, 30240.0, 34920, 6109), ('Thu Oct 12 00:00:00 2023', 109440.0, 27360.0, 29520, 6109)]
-
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
 
 
 def test_cycle_time_between_commits_by_author_high_deviation(temp_directory):
@@ -182,6 +181,5 @@ def test_cycle_time_between_commits_by_author_high_deviation(temp_directory):
     logging.debug('======= result =======: \n%s', result)
 
     expected = [('Mon May 13 00:00:00 2024', 1368000.0, 342000.0, 351720, 22075), ('Tue Nov  5 00:00:00 2024', 812160.0, 203040.0, 253440, 100800)]
-
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
 

@@ -6,6 +6,7 @@ from src.util.toy_repo import ToyRepoCreator
 import os
 from src.calculators.change_failure_calculator import extract_commit_data, calculate_change_failure_rate
 from src.git_ir import git_log
+from src.util.date_util import normalize_date
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -52,6 +53,6 @@ def test_change_failure_rate(temp_directory, setup_logging):
 
     # Check if the calculated rates match the expected values
     for month, expected_rate in expected_rates.items():
-        calculated_rate = change_failure_rates.get(month, 0)
+        calculated_rate = change_failure_rates.get(normalize_date(month, 'YYYY-MM'), 0)
         assert calculated_rate == expected_rate, f"Month: {month}, Expected: {expected_rate}, Actual: {calculated_rate}"
 

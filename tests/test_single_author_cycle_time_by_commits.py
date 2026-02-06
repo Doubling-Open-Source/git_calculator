@@ -7,6 +7,7 @@ import os
 from src.calculators.cycle_time_by_commits_calculator import commit_statistics, calculate_time_deltas, commit_statistics_to_string
 import numpy as np
 from src.git_ir import git_log
+from src.util.date_util import expected_for_comparison
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -62,7 +63,7 @@ def test_cycle_time_between_commits_single_author_no_deviation(temp_directory):
                ('Thu Sep  7 00:00:00 2023', 5760.0, 1440.0, 1440, 0), 
                ('Mon Sep 11 00:00:00 2023', 4320.0, 1440.0, 1440, 0)]
     
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
 
 
 def test_cycle_time_between_commits_single_author_small_deviation(temp_directory):
@@ -119,4 +120,4 @@ def test_cycle_time_between_commits_single_author_small_deviation(temp_directory
                ('Mon Sep 11 00:00:00 2023', 11520.0, 2880.0, 3240, 1176), 
                ('Wed Sep 20 00:00:00 2023', 8640.0, 2880.0, 3600, 1440)]
     
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)

@@ -7,6 +7,7 @@ import os
 from src.calculators.cycle_time_by_commits_calculator import calculate_time_deltas, commit_statistics_to_string, commit_statistics_normalized_by_month
 import numpy as np
 from src.git_ir import git_log
+from src.util.date_util import expected_for_comparison
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -75,5 +76,4 @@ def test_cycle_time_normalized_by_month(temp_directory):
     expected= [('2023-9', 4320.0, 1440.0, 1440, 0), 
                 ('2023-10', 67680.0, 13536.0, 15840, 10708), 
                 ('2023-11', 36000.0, 12000.0, 14400, 8314)]
-
-    assert result == expected, "Expected: %s, Actual: %s" % (expected, result)
+    assert result == expected_for_comparison(expected, 'YYYY-MM'), "Expected: %s, Actual: %s" % (expected, result)
