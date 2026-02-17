@@ -26,7 +26,7 @@ from src.calculators import (
     change_failure_calculator as cfc,
     commit_analyzer as ca
 )
-from src import sqlite_lake
+from src.calculators import sqlite_lake
 
 # Configure logging
 logging.basicConfig(

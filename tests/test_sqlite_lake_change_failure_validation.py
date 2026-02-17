@@ -10,7 +10,7 @@ import os
 
 from src.git_ir import git_log
 from src.calculators.change_failure_calculator import extract_commit_data, calculate_change_failure_rate
-from src.sqlite_lake import (
+from src.calculators.sqlite_lake import (
     create_db,
     calculate_change_failure_rate_sql,
     DEFAULT_REPO_ID,
