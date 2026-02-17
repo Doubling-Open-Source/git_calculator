@@ -16,6 +16,8 @@ Cycle-time logic needs: primary key, author, commit time, and repo scope. Change
 | _raw_data_params   | TEXT        | Repo scope (e.g. `local:repo-name`) |
 | message            | TEXT        | Commit message (for change-failure; exists in DevLake) |
 
+**Repo ID** (DevLake-style `local:<name>`): established at init via `SqliteLake(repo_id=None)`. If None, uses `get_repo_name()` (remote.origin.url or cwd basename).
+
 Repo filter (same as lake): `WHERE _raw_data_params = ?` with one repo id.
 
 ## DDL (SQLite)

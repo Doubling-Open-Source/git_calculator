@@ -15,17 +15,7 @@ from src.calculators.cycle_time_by_commits_calculator import (
     commit_statistics_normalized_by_month,
     cycle_time_between_commits_by_author,
 )
-from src.calculators.sqlite_lake import (
-    create_db,
-    populate_commits_from_log,
-    query_deltas,
-    query_fixed_bucket_stats_pure_sql,
-    query_by_month_stats_pure_sql,
-    calculate_time_deltas_sql,
-    commit_statistics_sql,
-    commit_statistics_normalized_by_month_sql,
-    cycle_time_between_commits_by_author_sql,
-)
+from src.calculators.sqlite_lake import SqliteLake
 
 
 @pytest.fixture(scope="function")
@@ -45,8 +35,9 @@ def test_calculate_time_deltas_parity(temp_directory):
     logs = git_log()
 
     py_result = calculate_time_deltas(logs)
-    conn = create_db()
-    sql_result = calculate_time_deltas_sql(conn, logs=logs)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    sql_result = lake.calculate_time_deltas_sql(conn, logs=logs)
 
     assert len(py_result) == len(sql_result), "Delta count mismatch"
     py_sorted = sorted(py_result, key=lambda x: (x[0], x[1]))
@@ -65,9 +56,10 @@ def test_sqlite_deltas_match_python(temp_directory):
     logs = git_log()
 
     py_deltas = calculate_time_deltas(logs)
-    conn = create_db()
-    populate_commits_from_log(conn, logs=logs)
-    sql_deltas = query_deltas(conn)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    lake.populate_commits_from_log(conn, logs=logs)
+    sql_deltas = lake.query_deltas(conn)
 
     assert len(py_deltas) == len(sql_deltas), "Delta count mismatch"
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))
@@ -88,8 +80,9 @@ def test_commit_statistics_parity(temp_directory):
 
     py_deltas = calculate_time_deltas(logs)
     py_result = commit_statistics(py_deltas, bucket_size=bucket_size)
-    conn = create_db()
-    sql_result = commit_statistics_sql(conn, bucket_size, logs=logs)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    sql_result = lake.commit_statistics_sql(conn, bucket_size, logs=logs)
 
     assert py_result == sql_result, f"commit_statistics != commit_statistics_sql: {py_result} vs {sql_result}"
 
@@ -106,9 +99,10 @@ def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
     py_deltas = calculate_time_deltas(logs)
     py_stats = commit_statistics(py_deltas, bucket_size=bucket_size)
 
-    conn = create_db()
-    populate_commits_from_log(conn, logs=logs)
-    sql_stats = query_fixed_bucket_stats_pure_sql(conn, bucket_size=bucket_size)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    lake.populate_commits_from_log(conn, logs=logs)
+    sql_stats = lake.query_fixed_bucket_stats_pure_sql(conn, bucket_size=bucket_size)
 
     assert len(py_stats) == len(sql_stats), "Fixed-bucket row count mismatch"
     for i, (p, s) in enumerate(zip(py_stats, sql_stats)):
@@ -129,8 +123,9 @@ def test_commit_statistics_normalized_by_month_parity(temp_directory):
 
     py_deltas = calculate_time_deltas(logs)
     py_result = commit_statistics_normalized_by_month(py_deltas)
-    conn = create_db()
-    sql_result = commit_statistics_normalized_by_month_sql(conn, logs=logs)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    sql_result = lake.commit_statistics_normalized_by_month_sql(conn, logs=logs)
 
     assert len(py_result) == len(sql_result), "By-month row count mismatch"
     TOL = 100  # timestamp boundary / TZ can shift one delta between months
@@ -150,8 +145,9 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
     trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22])
     bucket_size = 4
     py_result = cycle_time_between_commits_by_author(bucket_size=bucket_size)
-    conn = create_db()
-    sql_result = cycle_time_between_commits_by_author_sql(
+    lake = SqliteLake()
+    conn = lake.create_db()
+    sql_result = lake.cycle_time_between_commits_by_author_sql(
         conn, bucket_size=bucket_size, logs=None
     )
 
@@ -169,9 +165,10 @@ def test_sqlite_by_month_stats_match_python(temp_directory):
     py_deltas = calculate_time_deltas(logs)
     py_stats = commit_statistics_normalized_by_month(py_deltas)
 
-    conn = create_db()
-    populate_commits_from_log(conn, logs=logs)
-    sql_stats = query_by_month_stats_pure_sql(conn)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    lake.populate_commits_from_log(conn, logs=logs)
+    sql_stats = lake.query_by_month_stats_pure_sql(conn)
 
     assert len(py_stats) == len(sql_stats), "By-month row count mismatch"
     TOL = 100
@@ -192,9 +189,10 @@ def test_sqlite_multi_author_deltas_match_python(temp_directory):
     logs = git_log()
 
     py_deltas = calculate_time_deltas(logs)
-    conn = create_db()
-    populate_commits_from_log(conn, logs=logs)
-    sql_deltas = query_deltas(conn)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    lake.populate_commits_from_log(conn, logs=logs)
+    sql_deltas = lake.query_deltas(conn)
 
     assert len(py_deltas) == len(sql_deltas)
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))

@@ -8,11 +8,7 @@ import tempfile
 import subprocess
 import os
 
-from src.calculators.sqlite_lake import (
-    create_db,
-    populate_commits_from_log,
-    DEFAULT_REPO_ID,
-)
+from src.calculators.sqlite_lake import SqliteLake, create_db
 
 
 @pytest.fixture(scope="function")
@@ -40,8 +36,10 @@ def test_create_db_applies_schema():
     conn.close()
 
 
-def test_default_repo_id():
-    assert DEFAULT_REPO_ID == "local:git_calculator"
+def test_sqlite_lake_repo_id_format():
+    """SqliteLake.repo_id is DevLake-style local:<name>."""
+    lake = SqliteLake()
+    assert lake.repo_id.startswith("local:")
 
 
 def test_populate_commits_from_log_inserts_rows(temp_directory):
@@ -52,9 +50,10 @@ def test_populate_commits_from_log_inserts_rows(temp_directory):
     trc.create_custom_commits_single_author([1, 2, 3, 4, 5])
     logs = git_log()
 
+    lake = SqliteLake()
     conn = create_db()
-    count = populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
+    count = lake.populate_commits_from_log(conn, logs=logs)
+    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,))
     db_count = cur.fetchone()[0]
     conn.close()
 
@@ -70,10 +69,11 @@ def test_populate_commits_from_log_replaces_on_same_repo(temp_directory):
     trc.create_custom_commits_single_author([1, 2, 3])
     logs = git_log()
 
+    lake = SqliteLake()
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs)
-    populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
+    lake.populate_commits_from_log(conn, logs=logs)
+    lake.populate_commits_from_log(conn, logs=logs)
+    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,))
     count = cur.fetchone()[0]
     conn.close()
 

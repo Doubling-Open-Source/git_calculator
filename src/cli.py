@@ -58,14 +58,15 @@ def analyze_single_repo(repo_path: str, output_dir: str = "metrics", backend: st
 
         logs = gir.git_log()
         if backend == "sql":
-            conn = sqlite_lake.create_db()
+            lake = sqlite_lake.SqliteLake()
+            conn = lake.create_db()
             try:
                 # Calculate cycle time
-                cycle_time_data = sqlite_lake.commit_statistics_normalized_by_month_sql(
+                cycle_time_data = lake.commit_statistics_normalized_by_month_sql(
                     conn, logs=logs
                 )
                 # Calculate change failure rate
-                failure_rate_data = sqlite_lake.query_change_failure_by_month_sql(conn)
+                failure_rate_data = lake.query_change_failure_by_month_sql(conn)
             finally:
                 conn.close()
         else:

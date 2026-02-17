@@ -10,10 +10,7 @@ import os
 
 from src.git_ir import git_log
 from src.calculators.change_failure_calculator import extract_commit_data, calculate_change_failure_rate
-from src.calculators.sqlite_lake import (
-    create_db,
-    calculate_change_failure_rate_sql,
-)
+from src.calculators.sqlite_lake import SqliteLake, create_db
 
 
 @pytest.fixture(scope="function")
@@ -36,8 +33,9 @@ def test_change_failure_rate_parity(temp_directory):
     py_rates = calculate_change_failure_rate(data_by_month)
     py_list = sorted(py_rates.items())
 
-    conn = create_db()
-    sql_list = calculate_change_failure_rate_sql(conn, logs=logs)
+    lake = SqliteLake()
+    conn = lake.create_db()
+    sql_list = lake.calculate_change_failure_rate_sql(conn, logs=logs)
 
     assert len(py_list) == len(sql_list), "Month count mismatch"
     for i, ((m1, r1), (m2, r2)) in enumerate(zip(py_list, sql_list)):
