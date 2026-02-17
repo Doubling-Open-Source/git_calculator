@@ -39,7 +39,7 @@ from src.calculators.cycle_time_by_commits_calculator import (
     commit_statistics,
     commit_statistics_normalized_by_month,
 )
-from src.sqlite_lake import (
+from src.calculators.sqlite_lake import (
     create_db,
     calculate_time_deltas_sql,
     commit_statistics_sql,

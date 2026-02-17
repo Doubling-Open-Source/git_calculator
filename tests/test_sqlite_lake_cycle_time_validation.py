@@ -6,6 +6,7 @@ Uses the same git_log() source; compares deltas count, fixed-bucket stats, and b
 import pytest
 import tempfile
 import subprocess
+import os
 
 from src.git_ir import git_log
 from src.calculators.cycle_time_by_commits_calculator import (
@@ -14,7 +15,7 @@ from src.calculators.cycle_time_by_commits_calculator import (
     commit_statistics_normalized_by_month,
     cycle_time_between_commits_by_author,
 )
-from src.sqlite_lake import (
+from src.calculators.sqlite_lake import (
     create_db,
     populate_commits_from_log,
     query_deltas,
@@ -30,15 +31,11 @@ from src.sqlite_lake import (
 
 @pytest.fixture(scope="function")
 def temp_directory():
-    # Use workspace-relative path so git init works in sandbox (no write to system /tmp)
-    import os
     workspace = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
     temp_dir = tempfile.mkdtemp(prefix="cycle_sqlite_", dir=workspace)
     yield temp_dir
     subprocess.run(["rm", "-rf", temp_dir], check=False)
 
-
-# --- Function parity: Python vs _sql return same results ---
 
 def test_calculate_time_deltas_parity(temp_directory):
     """calculate_time_deltas and calculate_time_deltas_sql return the same results."""
@@ -61,7 +58,7 @@ def test_calculate_time_deltas_parity(temp_directory):
 
 
 def test_sqlite_deltas_match_python(temp_directory):
-    """Same repo: delta count and sorted (ts, minutes) pairs match (legacy test)."""
+    """Same repo: delta count and sorted (ts, minutes) pairs match."""
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
@@ -99,7 +96,7 @@ def test_commit_statistics_parity(temp_directory):
 
 
 def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
-    """Fixed-bucket stats from SQLite match commit_statistics() on same data (legacy test)."""
+    """Fixed-bucket stats from SQLite match commit_statistics() on same data."""
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
@@ -153,7 +150,6 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22])
     bucket_size = 4
-    # Python version uses git_log() from cwd (temp_directory); SQL version needs same data via logs=None (git_log())
     py_result = cycle_time_between_commits_by_author(bucket_size=bucket_size)
     conn = create_db()
     sql_result = cycle_time_between_commits_by_author_sql(
@@ -164,7 +160,7 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
 
 
 def test_sqlite_by_month_stats_match_python(temp_directory):
-    """By-month stats from SQLite match commit_statistics_normalized_by_month() on same data (legacy test)."""
+    """By-month stats from SQLite match commit_statistics_normalized_by_month() on same data."""
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
@@ -179,7 +175,6 @@ def test_sqlite_by_month_stats_match_python(temp_directory):
     sql_stats = query_by_month_stats_pure_sql(conn, repo_id=DEFAULT_REPO_ID)
 
     assert len(py_stats) == len(sql_stats), "By-month row count mismatch"
-    # Small tolerance for sum/avg/p75/std: timestamp boundary or TZ can shift one delta between months
     TOL = 100
     for i, (p, s) in enumerate(zip(py_stats, sql_stats)):
         assert p[0] == s[0], f"Month {i} interval: {p[0]} != {s[0]}"
