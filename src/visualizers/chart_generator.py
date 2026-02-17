@@ -5,7 +5,7 @@ from datetime import datetime
 import numpy as np
 import json
 import os
-from src.util.git_util import git_run
+from src.util.git_util import git_run, get_repo_name
 
 def setup_plot_style():
     """Set up a modern, clean style for the plots"""
@@ -28,31 +28,6 @@ def ensure_metrics_dir():
     metrics_dir = os.path.join(os.getcwd(), 'metrics')
     os.makedirs(metrics_dir, exist_ok=True)
     return metrics_dir
-
-def get_repo_name():
-    """
-    Get the repository name from git configuration.
-    Returns the repository name or 'repo' if not found.
-    """
-    try:
-        # Try to get the remote URL
-        remote_url = git_run('config', '--get', 'remote.origin.url').stdout.strip()
-        if remote_url:
-            # Extract repo name from URL (handles both https and ssh formats)
-            repo_name = os.path.basename(remote_url)
-            # Remove .git extension if present
-            if repo_name.endswith('.git'):
-                repo_name = repo_name[:-4]
-            return repo_name
-    except:
-        pass
-    
-    # If remote URL not found, try to get the directory name
-    try:
-        repo_name = os.path.basename(os.getcwd())
-        return repo_name
-    except:
-        return 'repo'
 
 def save_metrics_data(cycle_time_data=None, failure_rate_data=None, prefix=None):
     """

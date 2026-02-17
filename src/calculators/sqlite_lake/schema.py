@@ -10,8 +10,6 @@ from typing import List, Optional, Any
 from src.git_ir import git_log
 from src.util.git_util import git_run
 
-DEFAULT_REPO_ID = "local:git_calculator"
-
 # Mirrors DevLake lake.commits; committed_date as INTEGER (Unix) for LAG/diff.
 COMMITS_DDL = """
 CREATE TABLE IF NOT EXISTS commits (
@@ -38,6 +36,7 @@ def create_db(path: Optional[str] = None) -> sqlite3.Connection:
 
 def populate_commits_from_log(
     conn: sqlite3.Connection,
+    repo_id: str,
     logs: Optional[List[Any]] = None,
 ) -> int:
     """
@@ -46,7 +45,7 @@ def populate_commits_from_log(
     if logs is None:
         logs = git_log()
     cur = conn.cursor()
-    cur.execute("DELETE FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
+    cur.execute("DELETE FROM commits WHERE _raw_data_params = ?", (repo_id,))
     for c in logs:
         sha = get_full_sha(c)
         author_email = c._author[0]
@@ -57,7 +56,7 @@ def populate_commits_from_log(
             msg = ""
         cur.execute(
             "INSERT OR REPLACE INTO commits (sha, author_email, committed_date, _raw_data_params, message) VALUES (?, ?, ?, ?, ?)",
-            (sha, author_email, committed_date, DEFAULT_REPO_ID, msg or None),
+            (sha, author_email, committed_date, repo_id, msg or None),
         )
     conn.commit()
     return len(logs)

@@ -40,16 +40,16 @@ SELECT committed_date, cycle_minutes FROM deltas WHERE cycle_minutes IS NOT NULL
 """
 
 
-def query_deltas(conn: sqlite3.Connection) -> List[Tuple[int, float]]:
+def query_deltas(conn: sqlite3.Connection, repo_id: str) -> List[Tuple[int, float]]:
     """Return list of (committed_date_unix, cycle_minutes) matching Python calculate_time_deltas order."""
-    cur = conn.execute(_deltas_cte().strip(), (schema.DEFAULT_REPO_ID,))
+    cur = conn.execute(_deltas_cte().strip(), (repo_id,))
     rows = cur.fetchall()
     return [(r[0], round(r[1], 2)) for r in rows]
 
 
-def query_deltas_raw(conn: sqlite3.Connection) -> List[Tuple[int, float]]:
+def query_deltas_raw(conn: sqlite3.Connection, repo_id: str) -> List[Tuple[int, float]]:
     """Same as query_deltas but return raw rows for debugging (no rounding)."""
-    cur = conn.execute(_deltas_cte().strip(), (schema.DEFAULT_REPO_ID,))
+    cur = conn.execute(_deltas_cte().strip(), (repo_id,))
     return [(r[0], r[1]) for r in cur.fetchall()]
 
 
@@ -122,10 +122,11 @@ ORDER BY b.bucket_id
 def query_fixed_bucket_stats_pure_sql(
     conn: sqlite3.Connection,
     bucket_size: int,
+    repo_id: str,
 ) -> List[Tuple[str, float, float, int, int]]:
     """Fixed-bucket stats using only SQL. Matches commit_statistics()."""
     sql = _sql_fixed_bucket_stats(bucket_size).strip()
-    cur = conn.execute(sql, (schema.DEFAULT_REPO_ID, bucket_size))
+    cur = conn.execute(sql, (repo_id, bucket_size))
     return [tuple(r) for r in cur.fetchall()]
 
 
@@ -191,47 +192,54 @@ ORDER BY b.month_year
 """
 
 
-def query_by_month_stats_pure_sql(conn: sqlite3.Connection) -> List[Tuple[str, float, float, int, int]]:
+def query_by_month_stats_pure_sql(
+    conn: sqlite3.Connection,
+    repo_id: str,
+) -> List[Tuple[str, float, float, int, int]]:
     """By-month stats using only SQL. Matches commit_statistics_normalized_by_month()."""
     sql = _sql_by_month_stats().strip()
-    cur = conn.execute(sql, (schema.DEFAULT_REPO_ID,))
+    cur = conn.execute(sql, (repo_id,))
     return [tuple(r) for r in cur.fetchall()]
 
 
 def calculate_time_deltas_sql(
     conn: sqlite3.Connection,
+    repo_id: str,
     logs: Optional[List[Any]] = None,
 ) -> List[List]:
     """SQL version of calculate_time_deltas. Same shape: list of [committed_date, cycle_minutes]."""
-    schema.populate_commits_from_log(conn, logs=logs)
-    rows = query_deltas(conn)
+    schema.populate_commits_from_log(conn, repo_id, logs=logs)
+    rows = query_deltas(conn, repo_id)
     return [[r[0], r[1]] for r in rows]
 
 
 def commit_statistics_sql(
     conn: sqlite3.Connection,
     bucket_size: int,
+    repo_id: str,
     logs: Optional[List[Any]] = None,
 ) -> List[Tuple[str, float, float, int, int]]:
     """SQL version of commit_statistics."""
-    schema.populate_commits_from_log(conn, logs=logs)
-    return query_fixed_bucket_stats_pure_sql(conn, bucket_size)
+    schema.populate_commits_from_log(conn, repo_id, logs=logs)
+    return query_fixed_bucket_stats_pure_sql(conn, bucket_size, repo_id)
 
 
 def commit_statistics_normalized_by_month_sql(
     conn: sqlite3.Connection,
+    repo_id: str,
     logs: Optional[List[Any]] = None,
 ) -> List[Tuple[str, float, float, int, int]]:
     """SQL version of commit_statistics_normalized_by_month."""
-    schema.populate_commits_from_log(conn, logs=logs)
-    return query_by_month_stats_pure_sql(conn)
+    schema.populate_commits_from_log(conn, repo_id, logs=logs)
+    return query_by_month_stats_pure_sql(conn, repo_id)
 
 
 def cycle_time_between_commits_by_author_sql(
     conn: sqlite3.Connection,
+    repo_id: str,
     bucket_size: int = 1000,
     logs: Optional[List[Any]] = None,
 ) -> List[Tuple[str, float, float, int, int]]:
     """SQL version of cycle_time_between_commits_by_author."""
-    schema.populate_commits_from_log(conn, logs=logs)
-    return query_fixed_bucket_stats_pure_sql(conn, bucket_size)
+    schema.populate_commits_from_log(conn, repo_id, logs=logs)
+    return query_fixed_bucket_stats_pure_sql(conn, bucket_size, repo_id)
