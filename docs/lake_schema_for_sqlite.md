@@ -6,7 +6,7 @@ This doc defines the minimal SQLite schema used in git_calculator to mirror the 
 
 ### commits
 
-Cycle-time logic only needs: primary key, author, commit time, and repo scope.
+Cycle-time logic needs: primary key, author, commit time, and repo scope. Change-failure also uses `message` (same column exists in DevLake).
 
 | Column             | SQLite type | Purpose                          |
 |--------------------|-------------|----------------------------------|
@@ -14,18 +14,9 @@ Cycle-time logic only needs: primary key, author, commit time, and repo scope.
 | author_email       | TEXT        | Author email                     |
 | committed_date     | INTEGER     | Unix timestamp (seconds) for ordering and diffing |
 | _raw_data_params   | TEXT        | Repo scope (e.g. `local:repo-name`) |
+| message            | TEXT        | Commit message (for change-failure; exists in DevLake) |
 
 Repo filter (same as lake): `WHERE _raw_data_params = ?` with one repo id.
-
-### refs (optional)
-
-If we want the same filter pattern as the lake, a minimal table:
-
-| Column   | SQLite type | Purpose    |
-|----------|-------------|------------|
-| repo_id  | TEXT        | Repo identifier (e.g. `local:git_calculator`) |
-
-Not required for single-repo validation; useful for multi-repo or future MySQL alignment.
 
 ## DDL (SQLite)
 
@@ -34,14 +25,26 @@ CREATE TABLE IF NOT EXISTS commits (
   sha TEXT PRIMARY KEY,
   author_email TEXT,
   committed_date INTEGER,
-  _raw_data_params TEXT
-);
-
-CREATE TABLE IF NOT EXISTS refs (
-  repo_id TEXT
+  _raw_data_params TEXT,
+  message TEXT
 );
 ```
 
 ## committed_date
 
 Stored as **INTEGER** (Unix timestamp) so that `LAG(committed_date)` and differences are straightforward and match Python’s `commit._when`.
+
+## Python → SQL parity (Grafana-ready)
+
+All cycle-time data is produced by **pure SQL** in [src/sqlite_lake.py](../src/sqlite_lake.py). Parity tests in `tests/test_cycle_time_sqlite_validation.py` assert each pair returns the same results.
+
+| Python (cycle_time_by_commits_calculator) | SQL (sqlite_lake) | Test |
+|------------------------------------------|-------------------|------|
+| `calculate_time_deltas(logs)` | `calculate_time_deltas_sql(conn, repo_id, logs=None)` | `test_calculate_time_deltas_parity` |
+| `commit_statistics(time_deltas, bucket_size)` | `commit_statistics_sql(conn, bucket_size, repo_id, logs=None)` | `test_commit_statistics_parity` |
+| `commit_statistics_normalized_by_month(time_deltas)` | `commit_statistics_normalized_by_month_sql(conn, repo_id, logs=None)` | `test_commit_statistics_normalized_by_month_parity` |
+| `cycle_time_between_commits_by_author(bucket_size)` | `cycle_time_between_commits_by_author_sql(conn, bucket_size, repo_id, logs=None)` | `test_cycle_time_between_commits_by_author_parity` |
+| `extract_commit_data` + `calculate_change_failure_rate` (change_failure_calculator) | `calculate_change_failure_rate_sql(conn, repo_id, logs=None)` | `test_change_failure_rate_parity` (test_change_failure_sqlite_validation.py) |
+
+- **_sql** functions populate from `logs` (or `git_log()` if `logs=None`) then run pure SQL; return shape matches the Python function.
+- **p75**: Linear interpolation in SQL. **stdev**: Sample standard deviation in SQL. Month/bucket use local time to match Python.
