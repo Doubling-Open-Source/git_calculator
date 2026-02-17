@@ -13,7 +13,6 @@ from src.calculators.change_failure_calculator import extract_commit_data, calcu
 from src.calculators.sqlite_lake import (
     create_db,
     calculate_change_failure_rate_sql,
-    DEFAULT_REPO_ID,
 )
 
 
@@ -38,7 +37,7 @@ def test_change_failure_rate_parity(temp_directory):
     py_list = sorted(py_rates.items())
 
     conn = create_db()
-    sql_list = calculate_change_failure_rate_sql(conn, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_list = calculate_change_failure_rate_sql(conn, logs=logs)
 
     assert len(py_list) == len(sql_list), "Month count mismatch"
     for i, ((m1, r1), (m2, r2)) in enumerate(zip(py_list, sql_list)):

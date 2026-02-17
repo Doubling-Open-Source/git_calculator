@@ -40,11 +40,11 @@ All cycle-time data is produced by **pure SQL** in [src/calculators/sqlite_lake/
 
 | Python (cycle_time_by_commits_calculator) | SQL (sqlite_lake) | Test |
 |------------------------------------------|-------------------|------|
-| `calculate_time_deltas(logs)` | `calculate_time_deltas_sql(conn, repo_id, logs=None)` | `test_calculate_time_deltas_parity` |
-| `commit_statistics(time_deltas, bucket_size)` | `commit_statistics_sql(conn, bucket_size, repo_id, logs=None)` | `test_commit_statistics_parity` |
-| `commit_statistics_normalized_by_month(time_deltas)` | `commit_statistics_normalized_by_month_sql(conn, repo_id, logs=None)` | `test_commit_statistics_normalized_by_month_parity` |
-| `cycle_time_between_commits_by_author(bucket_size)` | `cycle_time_between_commits_by_author_sql(conn, bucket_size, repo_id, logs=None)` | `test_cycle_time_between_commits_by_author_parity` |
-| `extract_commit_data` + `calculate_change_failure_rate` (change_failure_calculator) | `calculate_change_failure_rate_sql(conn, repo_id, logs=None)` | `test_change_failure_rate_parity` (test_sqlite_lake_change_failure_validation.py) |
+| `calculate_time_deltas(logs)` | `calculate_time_deltas_sql(conn, logs=None)` | `test_calculate_time_deltas_parity` |
+| `commit_statistics(time_deltas, bucket_size)` | `commit_statistics_sql(conn, bucket_size, logs=None)` | `test_commit_statistics_parity` |
+| `commit_statistics_normalized_by_month(time_deltas)` | `commit_statistics_normalized_by_month_sql(conn, logs=None)` | `test_commit_statistics_normalized_by_month_parity` |
+| `cycle_time_between_commits_by_author(bucket_size)` | `cycle_time_between_commits_by_author_sql(conn, bucket_size, logs=None)` | `test_cycle_time_between_commits_by_author_parity` |
+| `extract_commit_data` + `calculate_change_failure_rate` (change_failure_calculator) | `calculate_change_failure_rate_sql(conn, logs=None)` | `test_change_failure_rate_parity` (test_sqlite_lake_change_failure_validation.py) |
 
 - **_sql** functions populate from `logs` (or `git_log()` if `logs=None`) then run pure SQL; return shape matches the Python function.
 - **p75**: Linear interpolation in SQL. **stdev**: Sample standard deviation in SQL. Month/bucket use local time to match Python.

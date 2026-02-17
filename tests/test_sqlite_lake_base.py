@@ -53,7 +53,7 @@ def test_populate_commits_from_log_inserts_rows(temp_directory):
     logs = git_log()
 
     conn = create_db()
-    count = populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
+    count = populate_commits_from_log(conn, logs=logs)
     cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
     db_count = cur.fetchone()[0]
     conn.close()
@@ -71,8 +71,8 @@ def test_populate_commits_from_log_replaces_on_same_repo(temp_directory):
     logs = git_log()
 
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
+    populate_commits_from_log(conn, logs=logs)
+    populate_commits_from_log(conn, logs=logs)
     cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
     count = cur.fetchone()[0]
     conn.close()

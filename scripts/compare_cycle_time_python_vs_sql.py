@@ -44,7 +44,6 @@ from src.calculators.sqlite_lake import (
     calculate_time_deltas_sql,
     commit_statistics_sql,
     commit_statistics_normalized_by_month_sql,
-    DEFAULT_REPO_ID,
 )
 
 DEFAULT_OUT = "scripts/compare_output"
@@ -145,7 +144,7 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
 
     # --- Deltas ---
     py_deltas = calculate_time_deltas(logs)
-    sql_deltas = calculate_time_deltas_sql(conn, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_deltas = calculate_time_deltas_sql(conn, logs=logs)
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))
     sql_sorted = sorted(sql_deltas, key=lambda x: (x[0], x[1]))
 
@@ -158,7 +157,7 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
 
     # --- Fixed-bucket stats ---
     py_fixed = commit_statistics(py_deltas, bucket_size=bucket_size)
-    sql_fixed = commit_statistics_sql(conn, bucket_size, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_fixed = commit_statistics_sql(conn, bucket_size, logs=logs)
     pd.DataFrame(py_fixed, columns=STATS_COLS).to_csv(
         os.path.join(out_dir, "fixed_bucket_python.csv"), index=False
     )
@@ -168,7 +167,7 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
 
     # --- By-month stats ---
     py_month = commit_statistics_normalized_by_month(py_deltas)
-    sql_month = commit_statistics_normalized_by_month_sql(conn, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_month = commit_statistics_normalized_by_month_sql(conn, logs=logs)
     pd.DataFrame(py_month, columns=STATS_COLS).to_csv(
         os.path.join(out_dir, "by_month_python.csv"), index=False
     )

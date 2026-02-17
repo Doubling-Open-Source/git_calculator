@@ -62,12 +62,10 @@ def analyze_single_repo(repo_path: str, output_dir: str = "metrics", backend: st
             try:
                 # Calculate cycle time
                 cycle_time_data = sqlite_lake.commit_statistics_normalized_by_month_sql(
-                    conn, sqlite_lake.DEFAULT_REPO_ID, logs=logs
+                    conn, logs=logs
                 )
                 # Calculate change failure rate
-                failure_rate_data = sqlite_lake.query_change_failure_by_month_sql(
-                    conn, sqlite_lake.DEFAULT_REPO_ID
-                )
+                failure_rate_data = sqlite_lake.query_change_failure_by_month_sql(conn)
             finally:
                 conn.close()
         else:
