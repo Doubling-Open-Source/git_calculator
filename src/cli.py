@@ -57,22 +57,28 @@ def analyze_single_repo(repo_path: str, output_dir: str = "metrics", backend: st
         logger.info(f"Analyzing repository at: {repo_path} (backend={backend})")
 
         logs = gir.git_log()
-        # Calculate cycle time
         if backend == "sql":
             conn = sqlite_lake.create_db()
             try:
+                # Calculate cycle time
                 cycle_time_data = sqlite_lake.commit_statistics_normalized_by_month_sql(
                     conn, sqlite_lake.DEFAULT_REPO_ID, logs=logs
+                )
+                # Calculate change failure rate
+                failure_rate_data = sqlite_lake.query_change_failure_by_month_sql(
+                    conn, sqlite_lake.DEFAULT_REPO_ID
                 )
             finally:
                 conn.close()
         else:
+            # Calculate cycle time
             tds = cycle_calc.calculate_time_deltas(logs)
             cycle_time_data = cycle_calc.commit_statistics_normalized_by_month(tds)
-
-        # Calculate change failure rate
-        data_by_month = cfc.extract_commit_data(logs)
-        failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
+            # Calculate change failure rate
+            data_by_month = cfc.extract_commit_data(logs)
+            failure_rate_data = [
+                (month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()
+            ]
 
         # Analyze commit trends by author
         ca.analyze_commits()
