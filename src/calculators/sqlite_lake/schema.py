@@ -39,7 +39,6 @@ def create_db(path: Optional[str] = None) -> sqlite3.Connection:
 def populate_commits_from_log(
     conn: sqlite3.Connection,
     logs: Optional[List[Any]] = None,
-    repo_id: str = DEFAULT_REPO_ID,
 ) -> int:
     """
     Populate commits table from git_log() (or provided logs). Returns row count.
@@ -47,7 +46,7 @@ def populate_commits_from_log(
     if logs is None:
         logs = git_log()
     cur = conn.cursor()
-    cur.execute("DELETE FROM commits WHERE _raw_data_params = ?", (repo_id,))
+    cur.execute("DELETE FROM commits WHERE _raw_data_params = ?", (DEFAULT_REPO_ID,))
     for c in logs:
         sha = get_full_sha(c)
         author_email = c._author[0]
@@ -58,7 +57,7 @@ def populate_commits_from_log(
             msg = ""
         cur.execute(
             "INSERT OR REPLACE INTO commits (sha, author_email, committed_date, _raw_data_params, message) VALUES (?, ?, ?, ?, ?)",
-            (sha, author_email, committed_date, repo_id, msg or None),
+            (sha, author_email, committed_date, DEFAULT_REPO_ID, msg or None),
         )
     conn.commit()
     return len(logs)

@@ -39,23 +39,19 @@ ORDER BY month
 """
 
 
-def query_change_failure_by_month_sql(
-    conn: sqlite3.Connection,
-    repo_id: str = schema.DEFAULT_REPO_ID,
-) -> List[Tuple[str, float]]:
+def query_change_failure_by_month_sql(conn: sqlite3.Connection) -> List[Tuple[str, float]]:
     """Return list of (month, rate) for change-failure rate. Requires commits already populated (with message)."""
-    cur = conn.execute(_sql_change_failure_by_month().strip(), (repo_id,))
+    cur = conn.execute(_sql_change_failure_by_month().strip(), (schema.DEFAULT_REPO_ID,))
     return [(r[0], round(r[1], 1)) for r in cur.fetchall()]
 
 
 def calculate_change_failure_rate_sql(
     conn: sqlite3.Connection,
-    repo_id: str = schema.DEFAULT_REPO_ID,
     logs: Optional[List[Any]] = None,
 ) -> List[Tuple[str, float]]:
     """
     SQL equivalent of extract_commit_data + calculate_change_failure_rate.
     Returns [(month, rate), ...] sorted by month, same shape as CLI expects.
     """
-    schema.populate_commits_from_log(conn, logs=logs, repo_id=repo_id)
-    return query_change_failure_by_month_sql(conn, repo_id)
+    schema.populate_commits_from_log(conn, logs=logs)
+    return query_change_failure_by_month_sql(conn)

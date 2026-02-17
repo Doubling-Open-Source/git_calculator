@@ -25,7 +25,6 @@ from src.calculators.sqlite_lake import (
     commit_statistics_sql,
     commit_statistics_normalized_by_month_sql,
     cycle_time_between_commits_by_author_sql,
-    DEFAULT_REPO_ID,
 )
 
 
@@ -47,7 +46,7 @@ def test_calculate_time_deltas_parity(temp_directory):
 
     py_result = calculate_time_deltas(logs)
     conn = create_db()
-    sql_result = calculate_time_deltas_sql(conn, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_result = calculate_time_deltas_sql(conn, logs=logs)
 
     assert len(py_result) == len(sql_result), "Delta count mismatch"
     py_sorted = sorted(py_result, key=lambda x: (x[0], x[1]))
@@ -67,8 +66,8 @@ def test_sqlite_deltas_match_python(temp_directory):
 
     py_deltas = calculate_time_deltas(logs)
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
-    sql_deltas = query_deltas(conn, DEFAULT_REPO_ID)
+    populate_commits_from_log(conn, logs=logs)
+    sql_deltas = query_deltas(conn)
 
     assert len(py_deltas) == len(sql_deltas), "Delta count mismatch"
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))
@@ -90,7 +89,7 @@ def test_commit_statistics_parity(temp_directory):
     py_deltas = calculate_time_deltas(logs)
     py_result = commit_statistics(py_deltas, bucket_size=bucket_size)
     conn = create_db()
-    sql_result = commit_statistics_sql(conn, bucket_size, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_result = commit_statistics_sql(conn, bucket_size, logs=logs)
 
     assert py_result == sql_result, f"commit_statistics != commit_statistics_sql: {py_result} vs {sql_result}"
 
@@ -108,8 +107,8 @@ def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
     py_stats = commit_statistics(py_deltas, bucket_size=bucket_size)
 
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
-    sql_stats = query_fixed_bucket_stats_pure_sql(conn, bucket_size=bucket_size, repo_id=DEFAULT_REPO_ID)
+    populate_commits_from_log(conn, logs=logs)
+    sql_stats = query_fixed_bucket_stats_pure_sql(conn, bucket_size=bucket_size)
 
     assert len(py_stats) == len(sql_stats), "Fixed-bucket row count mismatch"
     for i, (p, s) in enumerate(zip(py_stats, sql_stats)):
@@ -131,7 +130,7 @@ def test_commit_statistics_normalized_by_month_parity(temp_directory):
     py_deltas = calculate_time_deltas(logs)
     py_result = commit_statistics_normalized_by_month(py_deltas)
     conn = create_db()
-    sql_result = commit_statistics_normalized_by_month_sql(conn, repo_id=DEFAULT_REPO_ID, logs=logs)
+    sql_result = commit_statistics_normalized_by_month_sql(conn, logs=logs)
 
     assert len(py_result) == len(sql_result), "By-month row count mismatch"
     TOL = 100  # timestamp boundary / TZ can shift one delta between months
@@ -153,7 +152,7 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
     py_result = cycle_time_between_commits_by_author(bucket_size=bucket_size)
     conn = create_db()
     sql_result = cycle_time_between_commits_by_author_sql(
-        conn, bucket_size=bucket_size, repo_id=DEFAULT_REPO_ID, logs=None
+        conn, bucket_size=bucket_size, logs=None
     )
 
     assert py_result == sql_result, f"cycle_time_between_commits_by_author != _sql: {py_result} vs {sql_result}"
@@ -171,8 +170,8 @@ def test_sqlite_by_month_stats_match_python(temp_directory):
     py_stats = commit_statistics_normalized_by_month(py_deltas)
 
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
-    sql_stats = query_by_month_stats_pure_sql(conn, repo_id=DEFAULT_REPO_ID)
+    populate_commits_from_log(conn, logs=logs)
+    sql_stats = query_by_month_stats_pure_sql(conn)
 
     assert len(py_stats) == len(sql_stats), "By-month row count mismatch"
     TOL = 100
@@ -194,8 +193,8 @@ def test_sqlite_multi_author_deltas_match_python(temp_directory):
 
     py_deltas = calculate_time_deltas(logs)
     conn = create_db()
-    populate_commits_from_log(conn, logs=logs, repo_id=DEFAULT_REPO_ID)
-    sql_deltas = query_deltas(conn, DEFAULT_REPO_ID)
+    populate_commits_from_log(conn, logs=logs)
+    sql_deltas = query_deltas(conn)
 
     assert len(py_deltas) == len(sql_deltas)
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))
