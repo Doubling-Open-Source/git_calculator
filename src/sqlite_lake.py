@@ -9,6 +9,7 @@ import sqlite3
 from typing import List, Tuple, Optional, Any
 
 from src.git_ir import git_log
+from src.util.git_util import git_run
 
 # Default repo id when running from current repo (single-repo)
 DEFAULT_REPO_ID = "local:git_calculator"
@@ -18,7 +19,8 @@ CREATE TABLE IF NOT EXISTS commits (
   sha TEXT PRIMARY KEY,
   author_email TEXT,
   committed_date INTEGER,
-  _raw_data_params TEXT
+  _raw_data_params TEXT,
+  message TEXT
 );
 """
 
@@ -50,9 +52,13 @@ def populate_commits_from_log(
         sha = get_full_sha(c)
         author_email = c._author[0]
         committed_date = c._when
+        try:
+            msg = git_run("log", "-n", "1", "--format=%B", c).stdout.strip()
+        except Exception:
+            msg = ""
         cur.execute(
-            "INSERT OR REPLACE INTO commits (sha, author_email, committed_date, _raw_data_params) VALUES (?, ?, ?, ?)",
-            (sha, author_email, committed_date, repo_id),
+            "INSERT OR REPLACE INTO commits (sha, author_email, committed_date, _raw_data_params, message) VALUES (?, ?, ?, ?, ?)",
+            (sha, author_email, committed_date, repo_id, msg or None),
         )
     conn.commit()
     return len(logs)
@@ -291,3 +297,50 @@ def cycle_time_between_commits_by_author_sql(
     """
     populate_commits_from_log(conn, logs=logs, repo_id=repo_id)
     return query_fixed_bucket_stats_pure_sql(conn, bucket_size, repo_id)
+
+
+# --- Change-failure rate (same keywords as change_failure_calculator) ---
+
+def _sql_change_failure_by_month() -> str:
+    """SQL returning (month, rate) for change-failure rate per month. NULL message = not a fix. Keywords match change_failure_calculator."""
+    return """
+WITH by_month AS (
+  SELECT
+    strftime('%Y-%m', committed_date, 'unixepoch', 'localtime') AS month,
+    COUNT(*) AS total_commits,
+    SUM(CASE WHEN (message IS NOT NULL) AND (
+      LOWER(message) LIKE '%revert%' OR LOWER(message) LIKE '%hotfix%' OR LOWER(message) LIKE '%bugfix%'
+      OR LOWER(message) LIKE '%bug%' OR LOWER(message) LIKE '%fix%' OR LOWER(message) LIKE '%problem%' OR LOWER(message) LIKE '%issue%'
+    ) THEN 1 ELSE 0 END) AS fix_commits
+  FROM commits
+  WHERE _raw_data_params = ?
+  GROUP BY month
+)
+SELECT month,
+  CASE WHEN total_commits = 0 THEN 0 ELSE ROUND(100.0 * fix_commits / total_commits, 1) END AS rate
+FROM by_month
+ORDER BY month
+"""
+
+
+def query_change_failure_by_month_sql(
+    conn: sqlite3.Connection,
+    repo_id: str = DEFAULT_REPO_ID,
+) -> List[Tuple[str, float]]:
+    """Return list of (month, rate) for change-failure rate. Requires commits already populated (with message)."""
+    cur = conn.execute(_sql_change_failure_by_month().strip(), (repo_id,))
+    return [(r[0], round(r[1], 1)) for r in cur.fetchall()]
+
+
+def calculate_change_failure_rate_sql(
+    conn: sqlite3.Connection,
+    repo_id: str = DEFAULT_REPO_ID,
+    logs: Optional[List[Any]] = None,
+) -> List[Tuple[str, float]]:
+    """
+    SQL equivalent of extract_commit_data + calculate_change_failure_rate.
+    Populates from logs (or git_log() if None) then runs change-failure query.
+    Returns [(month, rate), ...] sorted by month, same shape as CLI expects.
+    """
+    populate_commits_from_log(conn, logs=logs, repo_id=repo_id)
+    return query_change_failure_by_month_sql(conn, repo_id)
