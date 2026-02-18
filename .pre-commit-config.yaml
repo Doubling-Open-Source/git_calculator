@@ -1,0 +1,42 @@
+# pre-commit hooks - https://pre-commit.com
+# Install: pip install pre-commit && pre-commit install
+# Run all: pre-commit run --all-files
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-merge-conflict
+      - id: check-toml
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-json
+      - id: pretty-format-json
+      - id: check-added-large-files
+        args: [--maxkb=1000]
+      - id: detect-private-key
+      - id: check-ast
+      - id: debug-statements
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.4.1
+    hooks:
+      - id: codespell
+        args: [-I, .codespell-ignore]
+
+  - repo: https://github.com/shssoichiro/oxipng
+    rev: v10.1.0
+    hooks:
+      - id: oxipng
+        args: [--oxipng-opt=2]
+
+  # Ruff: extend-ignore in pyproject.toml; see docs/future_ruff_unused_variables.md
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.1
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
