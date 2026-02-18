@@ -2,6 +2,8 @@
 Chart snapshot tests: Python vs SQL suites.
 Uses toy repo with duplicate timestamps to exhibit Python/SQL differences.
 Per docs/cycle_time_python_vs_sql_differences.md.
+
+Skipped in CI (env CI=true) due to OS rendering differences; run locally to verify charts.
 """
 
 import os
@@ -25,6 +27,12 @@ SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
 os.makedirs(os.path.join(SNAPSHOT_DIR, "python"), exist_ok=True)
 os.makedirs(os.path.join(SNAPSHOT_DIR, "sql"), exist_ok=True)
+
+# Skip in CI; chart pixel output differs by OS (font/size). Run locally to verify.
+if os.environ.get("CI") == "true":
+    pytestmark = pytest.mark.skip(
+        reason="Chart snapshots disabled in CI (OS rendering differences)"
+    )
 
 
 @pytest.fixture(scope="function")
