@@ -7,6 +7,15 @@ from typing import Any, List, Optional
 
 from src.util.git_util import get_repo_id, get_repo_name
 
+# Fixed DPI for deterministic snapshot tests (env GIT_CALCULATOR_DETERMINISTIC_CHARTS=1).
+# With figsize=(12, 6), output is always 1200×600 pixels, same on Linux and macOS.
+DETERMINISTIC_SAVE_DPI = 100
+
+
+def _deterministic_save():
+    """True when snapshot tests want fixed-size output (no bbox_inches='tight')."""
+    return os.environ.get("GIT_CALCULATOR_DETERMINISTIC_CHARTS") == "1"
+
 
 def setup_plot_style():
     """Set up a modern, clean style for the plots"""
@@ -249,14 +258,16 @@ def _render_cycle_time_chart(df, output_file, output_path):
     plt.xticks(rotation=45)
     plt.tight_layout()
 
-    # Save the plot
+    # Save the plot (deterministic size for snapshot tests when env is set)
+    if _deterministic_save():
+        kwargs = {"dpi": DETERMINISTIC_SAVE_DPI}
+    else:
+        kwargs = {"dpi": 300, "bbox_inches": "tight"}
     if output_path is not None:
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        plt.savefig(output_path, **kwargs)
     else:
         metrics_dir = ensure_metrics_dir()
-        plt.savefig(
-            os.path.join(metrics_dir, output_file), dpi=300, bbox_inches="tight"
-        )
+        plt.savefig(os.path.join(metrics_dir, output_file), **kwargs)
     plt.close()
 
 
@@ -353,14 +364,16 @@ def _render_change_failure_chart(df, output_file, output_path):
     plt.xticks(rotation=45)
     plt.tight_layout()
 
-    # Save the plot
+    # Save the plot (deterministic size for snapshot tests when env is set)
+    if _deterministic_save():
+        kwargs = {"dpi": DETERMINISTIC_SAVE_DPI}
+    else:
+        kwargs = {"dpi": 300, "bbox_inches": "tight"}
     if output_path is not None:
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        plt.savefig(output_path, **kwargs)
     else:
         metrics_dir = ensure_metrics_dir()
-        plt.savefig(
-            os.path.join(metrics_dir, output_file), dpi=300, bbox_inches="tight"
-        )
+        plt.savefig(os.path.join(metrics_dir, output_file), **kwargs)
     plt.close()
 
 

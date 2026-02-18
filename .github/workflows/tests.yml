@@ -19,6 +19,8 @@ jobs:
           git config --global user.email "test@example.com"
           git config --global user.name "Test Runner"
       - run: pytest tests/ -v --image-snapshot-save-diff
+        env:
+          GIT_CALCULATOR_DETERMINISTIC_CHARTS: "1"
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
