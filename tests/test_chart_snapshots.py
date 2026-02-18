@@ -65,7 +65,9 @@ def test_cycle_time_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
     lake = SqliteLake()
     conn = lake.create_db()
     try:
-        cycle_time_data = lake.commit_statistics_normalized_by_month_sql(conn, logs=logs)
+        cycle_time_data = lake.commit_statistics_normalized_by_month_sql(
+            conn, logs=logs
+        )
     finally:
         conn.close()
     output_file = str(tmp_path / "cycle_time.png")
@@ -80,7 +82,8 @@ def test_change_failure_rate_snapshot_python(snapshot_repo, image_snapshot, tmp_
     logs = git_log()
     data_by_month = cfc.extract_commit_data(logs)
     failure_rate_data = [
-        (month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()
+        (month, rate)
+        for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()
     ]
     output_file = str(tmp_path / "change_failure_rate.png")
     plot_change_failure_rate(failure_rate_data, output_path=output_file)

@@ -25,7 +25,6 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime
 
 # Run from repo root so src is importable
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -55,7 +54,9 @@ def run_toy_repo():
     try:
         os.chdir(tmp)
         trc = ToyRepoCreator(tmp)
-        trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22, 34, 35, 41, 49])
+        trc.create_custom_commits_single_author(
+            [1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22, 34, 35, 41, 49]
+        )
         logs = git_log()
         return logs, orig_cwd
     except Exception:
@@ -69,14 +70,30 @@ def main():
     parser = argparse.ArgumentParser(
         description="Compare Python vs SQL cycle-time: write CSVs + plots to output dir for diff/snapshot."
     )
-    parser.add_argument("--toy", action="store_true", help="Use a toy repo (deterministic)")
-    parser.add_argument("--repo-dir", metavar="DIR", help="Path to another git repo to analyze (default: cwd)")
-    parser.add_argument("--out-dir", default=DEFAULT_OUT, help=f"Output directory for CSVs and plots (default: {DEFAULT_OUT})")
-    parser.add_argument("--bucket-size", type=int, default=4, help="Bucket size for fixed-bucket stats")
+    parser.add_argument(
+        "--toy", action="store_true", help="Use a toy repo (deterministic)"
+    )
+    parser.add_argument(
+        "--repo-dir",
+        metavar="DIR",
+        help="Path to another git repo to analyze (default: cwd)",
+    )
+    parser.add_argument(
+        "--out-dir",
+        default=DEFAULT_OUT,
+        help=f"Output directory for CSVs and plots (default: {DEFAULT_OUT})",
+    )
+    parser.add_argument(
+        "--bucket-size", type=int, default=4, help="Bucket size for fixed-bucket stats"
+    )
     parser.add_argument("--no-plot", action="store_true", help="Skip generating plots")
     args = parser.parse_args()
 
-    out_dir = os.path.abspath(args.out_dir) if os.path.isabs(args.out_dir) else os.path.join(REPO_ROOT, args.out_dir)
+    out_dir = (
+        os.path.abspath(args.out_dir)
+        if os.path.isabs(args.out_dir)
+        else os.path.join(REPO_ROOT, args.out_dir)
+    )
     os.makedirs(out_dir, exist_ok=True)
 
     if args.toy:
@@ -103,7 +120,10 @@ def main():
     else:
         logs = git_log()
         if not logs:
-            print("No commits in current directory. Use --toy or --repo-dir DIR.", file=sys.stderr)
+            print(
+                "No commits in current directory. Use --toy or --repo-dir DIR.",
+                file=sys.stderr,
+            )
             sys.exit(1)
         run_comparison(logs, args.bucket_size, out_dir, args.no_plot)
 
@@ -123,13 +143,15 @@ def write_manifest(out_dir, no_plot, path):
         "  by_month_python.csv, by_month_sql.csv",
     ]
     if not no_plot:
-        lines.extend([
-            "",
-            "Plots:",
-            "  compare_cycle_time_fixed_bucket.svg",
-            "  compare_cycle_time_by_month.svg",
-            "  compare_cycle_time_scatter.svg",
-        ])
+        lines.extend(
+            [
+                "",
+                "Plots:",
+                "  compare_cycle_time_fixed_bucket.svg",
+                "  compare_cycle_time_by_month.svg",
+                "  compare_cycle_time_scatter.svg",
+            ]
+        )
     with open(path, "w") as f:
         f.write("\n".join(lines))
 
@@ -184,16 +206,40 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
 
     # Fixed-bucket: sum + average
     fig, axes = plt.subplots(2, 1, figsize=(10, 8))
-    axes[0].bar([i - w/2 for i in x], [r[1] for r in py_fixed], width=w, label="Python", color="C0")
-    axes[0].bar([i + w/2 for i in x], [r[1] for r in sql_fixed], width=w, label="SQL", color="C1")
+    axes[0].bar(
+        [i - w / 2 for i in x],
+        [r[1] for r in py_fixed],
+        width=w,
+        label="Python",
+        color="C0",
+    )
+    axes[0].bar(
+        [i + w / 2 for i in x],
+        [r[1] for r in sql_fixed],
+        width=w,
+        label="SQL",
+        color="C1",
+    )
     axes[0].set_ylabel("Sum (minutes)")
     axes[0].set_title("Fixed-bucket: Sum – Python vs SQL")
     axes[0].set_xticks(x)
     axes[0].set_xticklabels([r[0] for r in py_fixed])
     axes[0].legend()
 
-    axes[1].bar([i - w/2 for i in x], [r[2] for r in py_fixed], width=w, label="Python", color="C0")
-    axes[1].bar([i + w/2 for i in x], [r[2] for r in sql_fixed], width=w, label="SQL", color="C1")
+    axes[1].bar(
+        [i - w / 2 for i in x],
+        [r[2] for r in py_fixed],
+        width=w,
+        label="Python",
+        color="C0",
+    )
+    axes[1].bar(
+        [i + w / 2 for i in x],
+        [r[2] for r in sql_fixed],
+        width=w,
+        label="SQL",
+        color="C1",
+    )
     axes[1].set_ylabel("Average (minutes)")
     axes[1].set_xlabel("Interval (YYYY-MM)")
     axes[1].set_title("Fixed-bucket: Average – Python vs SQL")
@@ -201,14 +247,28 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
     axes[1].set_xticklabels([r[0] for r in py_fixed])
     axes[1].legend()
     fig.tight_layout()
-    fig.savefig(os.path.join(out_dir, "compare_cycle_time_fixed_bucket.svg"), format="svg")
+    fig.savefig(
+        os.path.join(out_dir, "compare_cycle_time_fixed_bucket.svg"), format="svg"
+    )
     plt.close(fig)
 
     # By-month: sum
     fig2, ax2 = plt.subplots(figsize=(10, 4))
     xm = range(len(py_month))
-    ax2.bar([i - w/2 for i in xm], [r[1] for r in py_month], width=w, label="Python sum", color="C0")
-    ax2.bar([i + w/2 for i in xm], [r[1] for r in sql_month], width=w, label="SQL sum", color="C1")
+    ax2.bar(
+        [i - w / 2 for i in xm],
+        [r[1] for r in py_month],
+        width=w,
+        label="Python sum",
+        color="C0",
+    )
+    ax2.bar(
+        [i + w / 2 for i in xm],
+        [r[1] for r in sql_month],
+        width=w,
+        label="SQL sum",
+        color="C1",
+    )
     ax2.set_ylabel("Sum (minutes)")
     ax2.set_xlabel("Month")
     ax2.set_title("By-month: Sum – Python vs SQL")
@@ -220,8 +280,18 @@ def run_comparison(logs, bucket_size, out_dir, no_plot):
     plt.close(fig2)
 
     # Scatter: Python vs SQL
-    all_py = [r[1] for r in py_fixed] + [r[2] for r in py_fixed] + [r[1] for r in py_month] + [r[2] for r in py_month]
-    all_sql = [r[1] for r in sql_fixed] + [r[2] for r in sql_fixed] + [r[1] for r in sql_month] + [r[2] for r in sql_month]
+    all_py = (
+        [r[1] for r in py_fixed]
+        + [r[2] for r in py_fixed]
+        + [r[1] for r in py_month]
+        + [r[2] for r in py_month]
+    )
+    all_sql = (
+        [r[1] for r in sql_fixed]
+        + [r[2] for r in sql_fixed]
+        + [r[1] for r in sql_month]
+        + [r[2] for r in sql_month]
+    )
     fig3, ax3 = plt.subplots(figsize=(5, 5))
     ax3.scatter(all_py, all_sql, alpha=0.7)
     mx = max(all_py + all_sql) * 1.05 or 1

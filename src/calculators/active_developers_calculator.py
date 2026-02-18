@@ -1,11 +1,7 @@
 from datetime import datetime
 from io import StringIO
-import time
-from src.git_ir import all_objects, git_log, git_obj, format_git_logs_as_string
-from src.util.git_util import git_run
+from src.git_ir import git_log, format_git_logs_as_string
 from subprocess import run as sp_run
-import numpy as np
-from statistics import stdev
 import logging
 from collections import defaultdict
 
@@ -13,6 +9,7 @@ logging.basicConfig(
     level=logging.DEBUG,  # Set the desired log level
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
+
 
 def extract_authors(logs):
     """
@@ -63,7 +60,7 @@ def author_statistics_to_string(author_stats):
     return buf.getvalue()
 
 
-def write_monthly_author_statistics_to_file(author_stats, fname='authors_by_month.csv'):
+def write_monthly_author_statistics_to_file(author_stats, fname="authors_by_month.csv"):
     """
     Write the author statistics to a file.
 
@@ -72,10 +69,10 @@ def write_monthly_author_statistics_to_file(author_stats, fname='authors_by_mont
         fname (str): Filename for the output.
     """
     stats_string = author_statistics_to_string(author_stats)
-    with open(fname, 'wt') as fout:
+    with open(fname, "wt") as fout:
         fout.write(stats_string)
-    if fname.endswith('.csv'):
-        sp_run(['open', fname])
+    if fname.endswith(".csv"):
+        sp_run(["open", fname])
 
 
 def monthly_active_developers():
@@ -83,7 +80,7 @@ def monthly_active_developers():
     Main function to calculate and write monthly active developers statistics.
     """
     logs = git_log()
-    logging.debug('Logs: %s', format_git_logs_as_string(logs))
+    logging.debug("Logs: %s", format_git_logs_as_string(logs))
 
     authors_by_month = extract_authors(logs)
     author_stats = monthly_author_statistics(authors_by_month)

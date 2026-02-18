@@ -9,8 +9,11 @@ import subprocess
 import os
 
 from src.git_ir import git_log
-from src.calculators.change_failure_calculator import extract_commit_data, calculate_change_failure_rate
-from src.calculators.sqlite_lake import SqliteLake, create_db
+from src.calculators.change_failure_calculator import (
+    extract_commit_data,
+    calculate_change_failure_rate,
+)
+from src.calculators.sqlite_lake import SqliteLake
 
 
 @pytest.fixture(scope="function")
@@ -26,7 +29,9 @@ def test_change_failure_rate_parity(temp_directory):
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
-    trc.create_custom_commits([7 * i for i in range(12)])  # weekly intervals, messages with bugfix/hotfix
+    trc.create_custom_commits(
+        [7 * i for i in range(12)]
+    )  # weekly intervals, messages with bugfix/hotfix
     logs = git_log()
 
     data_by_month = extract_commit_data(logs)

@@ -31,7 +31,6 @@ repos:
     rev: v10.1.0
     hooks:
       - id: oxipng
-        args: [--oxipng-opt=2]
 
   # Ruff: extend-ignore in pyproject.toml; see docs/future_ruff_unused_variables.md
   - repo: https://github.com/astral-sh/ruff-pre-commit

@@ -82,7 +82,9 @@ class SqliteLake:
             conn, self.repo_id, bucket_size=bucket_size, logs=logs
         )
 
-    def query_change_failure_by_month_sql(self, conn: sqlite3.Connection) -> List[tuple]:
+    def query_change_failure_by_month_sql(
+        self, conn: sqlite3.Connection
+    ) -> List[tuple]:
         return cf.query_change_failure_by_month_sql(conn, self.repo_id)
 
     def calculate_change_failure_rate_sql(

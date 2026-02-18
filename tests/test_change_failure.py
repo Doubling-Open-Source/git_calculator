@@ -2,11 +2,14 @@ import pytest
 import tempfile
 import logging
 import subprocess
-from src.util.toy_repo import ToyRepoCreator 
-import os
-from src.calculators.change_failure_calculator import extract_commit_data, calculate_change_failure_rate
+from src.util.toy_repo import ToyRepoCreator
+from src.calculators.change_failure_calculator import (
+    extract_commit_data,
+    calculate_change_failure_rate,
+)
 from src.git_ir import git_log
 from src.util.date_util import normalize_date
+
 
 @pytest.fixture(scope="function")
 def setup_logging():
@@ -15,11 +18,13 @@ def setup_logging():
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
+
 @pytest.fixture(scope="function")
 def temp_directory():
     temp_dir = tempfile.mkdtemp()
     yield temp_dir
-    subprocess.run(['rm', '-rf', temp_dir])
+    subprocess.run(["rm", "-rf", temp_dir])
+
 
 def test_change_failure_rate(temp_directory, setup_logging):
     """
@@ -36,7 +41,9 @@ def test_change_failure_rate(temp_directory, setup_logging):
     """
     trc = ToyRepoCreator(temp_directory)
     # Create custom commits with 'bugfix' and 'hotfix' in some commit messages
-    trc.create_custom_commits([7 * i for i in range(12)])  # Weekly intervals for 12 weeks
+    trc.create_custom_commits(
+        [7 * i for i in range(12)]
+    )  # Weekly intervals for 12 weeks
 
     logs = git_log()
     commit_data = extract_commit_data(logs)
@@ -46,13 +53,14 @@ def test_change_failure_rate(temp_directory, setup_logging):
     # Assuming 'bugfix' or 'hotfix' appears in specific commits as per ToyRepoCreator logic
     expected_rates = {
         # Example expected values (update these based on actual ToyRepoCreator logic)
-        '2023-9': 40,  
-        '2023-10': 75,
-        '2023-11': 33.3,
+        "2023-9": 40,
+        "2023-10": 75,
+        "2023-11": 33.3,
     }
 
     # Check if the calculated rates match the expected values
     for month, expected_rate in expected_rates.items():
-        calculated_rate = change_failure_rates.get(normalize_date(month, 'YYYY-MM'), 0)
-        assert calculated_rate == expected_rate, f"Month: {month}, Expected: {expected_rate}, Actual: {calculated_rate}"
-
+        calculated_rate = change_failure_rates.get(normalize_date(month, "YYYY-MM"), 0)
+        assert calculated_rate == expected_rate, (
+            f"Month: {month}, Expected: {expected_rate}, Actual: {calculated_rate}"
+        )

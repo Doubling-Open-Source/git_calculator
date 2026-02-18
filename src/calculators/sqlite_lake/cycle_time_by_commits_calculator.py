@@ -60,7 +60,7 @@ def _sql_fixed_bucket_stats(bucket_size: int) -> str:
     stdev: sample stdev = SQRT(SUM((x-mean)^2)/(n-1)); via SUM(x^2)-n*mean^2.
     DIFF: Any delta pairing differences (from _deltas_cte ordering) cascade to sum/avg/p75/std.
     """
-    return f"""
+    return """
 WITH ordered AS (
   SELECT sha, author_email, committed_date FROM commits WHERE _raw_data_params = ?
 ),

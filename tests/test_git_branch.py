@@ -1,10 +1,7 @@
 import subprocess
 import pytest
 import tempfile
-from src.util import toy_repo  
-from src.git_ir import all_objects, git_obj, git_log, git_branches
-from src.util.git_util import git_run
-import logging
+
 
 @pytest.fixture(scope="function")
 def temp_directory():
@@ -12,8 +9,8 @@ def temp_directory():
     temp_dir = tempfile.mkdtemp()
     yield temp_dir  # Provide the temporary directory as a fixture
     # Clean up: remove the temporary directory and its contents
-    subprocess.run(['rm', '-rf', temp_dir])
-    
+    subprocess.run(["rm", "-rf", temp_dir])
+
 
 def test_git_branches(temp_directory):
     """
@@ -34,4 +31,3 @@ def test_git_branches(temp_directory):
         assert topic_branch_name in [branch.split('/')[-1] for branch in branch_info.values()]
     """
     assert True
-

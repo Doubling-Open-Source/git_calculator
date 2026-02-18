@@ -53,7 +53,9 @@ def test_populate_commits_from_log_inserts_rows(temp_directory):
     lake = SqliteLake()
     conn = create_db()
     count = lake.populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,))
+    cur = conn.execute(
+        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,)
+    )
     db_count = cur.fetchone()[0]
     conn.close()
 
@@ -73,7 +75,9 @@ def test_populate_commits_from_log_replaces_on_same_repo(temp_directory):
     conn = create_db()
     lake.populate_commits_from_log(conn, logs=logs)
     lake.populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute("SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,))
+    cur = conn.execute(
+        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,)
+    )
     count = cur.fetchone()[0]
     conn.close()
 
