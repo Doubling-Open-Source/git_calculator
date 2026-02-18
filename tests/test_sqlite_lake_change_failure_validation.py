@@ -9,6 +9,7 @@ import subprocess
 import os
 
 from src.git_ir import git_log
+from src.util.git_util import get_repo_id
 from src.calculators.change_failure_calculator import (
     extract_commit_data,
     calculate_change_failure_rate,
@@ -33,14 +34,15 @@ def test_change_failure_rate_parity(temp_directory):
         [7 * i for i in range(12)]
     )  # weekly intervals, messages with bugfix/hotfix
     logs = git_log()
+    repo_id = get_repo_id()
 
     data_by_month = extract_commit_data(logs)
     py_rates = calculate_change_failure_rate(data_by_month)
     py_list = sorted(py_rates.items())
 
     lake = SqliteLake()
-    conn = lake.create_db()
-    sql_list = lake.calculate_change_failure_rate_sql(conn, logs=logs)
+    lake.load_logs(logs, repo_id)
+    sql_list = lake.calculate_change_failure_rate_sql(repo_id=repo_id)
 
     assert len(py_list) == len(sql_list), "Month count mismatch"
     for i, ((m1, r1), (m2, r2)) in enumerate(zip(py_list, sql_list)):

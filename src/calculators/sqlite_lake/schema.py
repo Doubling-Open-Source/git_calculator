@@ -34,6 +34,14 @@ def create_db(path: Optional[str] = None) -> sqlite3.Connection:
     return conn
 
 
+def get_first_repo_id(conn: sqlite3.Connection) -> Optional[str]:
+    """Return the first (arbitrary) repo_id from commits, or None if empty. For default when caller omits repo_id."""
+    row = conn.execute(
+        "SELECT _raw_data_params FROM commits ORDER BY _raw_data_params LIMIT 1"
+    ).fetchone()
+    return row[0] if row else None
+
+
 def populate_commits_from_log(
     conn: sqlite3.Connection,
     repo_id: str,

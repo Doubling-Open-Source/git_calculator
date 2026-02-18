@@ -18,14 +18,17 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from src.multi_repo_manager import MultiRepoManager
 from src.calculators.multi_repo_calculator import MultiRepoCalculator
 from src.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
-from src.visualizers.chart_generator import generate_charts, get_repo_name
+from src.visualizers.chart_generator import (
+    generate_charts,
+    generate_charts_sql,
+    get_repo_name,
+)
 from src import git_ir as gir
 from src.calculators import (
     cycle_time_by_commits_calculator as cycle_calc,
     change_failure_calculator as cfc,
     commit_analyzer as ca,
 )
-from src.calculators import sqlite_lake
 
 # Configure logging
 logging.basicConfig(
@@ -59,17 +62,13 @@ def analyze_single_repo(
 
         logs = gir.git_log()
         if backend == "sql":
-            lake = sqlite_lake.SqliteLake()
-            conn = lake.create_db()
-            try:
-                # Calculate cycle time
-                cycle_time_data = lake.commit_statistics_normalized_by_month_sql(
-                    conn, logs=logs
-                )
-                # Calculate change failure rate
-                failure_rate_data = lake.query_change_failure_by_month_sql(conn)
-            finally:
-                conn.close()
+            # Analyze commit trends by author
+            ca.analyze_commits()
+
+            # Generate charts and save data
+            # Backend-specific prefix so Python and SQL outputs can coexist for comparison
+            chart_prefix = f"{get_repo_name()}_sql_"
+            generate_charts_sql(logs=logs, save_data=True, prefix=chart_prefix)
         else:
             # Calculate cycle time
             tds = cycle_calc.calculate_time_deltas(logs)
@@ -83,19 +82,15 @@ def analyze_single_repo(
                 ).items()
             ]
 
-        # Analyze commit trends by author
-        ca.analyze_commits()
+            # Analyze commit trends by author
+            ca.analyze_commits()
 
-        # Generate charts and save data
-
-        # Backend-specific prefix so Python and SQL outputs can coexist for comparison
-        chart_prefix = f"{get_repo_name()}_sql_" if backend == "sql" else None
-        generate_charts(
-            cycle_time_data=cycle_time_data,
-            failure_rate_data=failure_rate_data,
-            save_data=True,
-            prefix=chart_prefix,
-        )
+            # Generate charts and save data
+            generate_charts(
+                cycle_time_data=cycle_time_data,
+                failure_rate_data=failure_rate_data,
+                save_data=True,
+            )
 
         logger.info(f"Successfully analyzed repository. Results saved to {output_dir}")
         return True
