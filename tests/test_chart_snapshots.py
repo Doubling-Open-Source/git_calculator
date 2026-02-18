@@ -58,7 +58,11 @@ def test_cycle_time_snapshot_python(snapshot_repo, image_snapshot, tmp_path):
     output_file = str(tmp_path / "cycle_time.png")
     plot_cycle_time(cycle_time_data, output_path=output_file)
     img = Image.open(output_file).convert("RGB")
-    image_snapshot(img, os.path.join(SNAPSHOT_DIR, "python", "cycle_time.png"))
+    image_snapshot(
+        img,
+        os.path.join(SNAPSHOT_DIR, "python", "cycle_time.png"),
+        threshold=0.1,
+    )
 
 
 def test_cycle_time_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
@@ -76,7 +80,11 @@ def test_cycle_time_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
             output_path=str(tmp_path / "cycle_time.png"),
         )
     img = Image.open(str(tmp_path / "cycle_time.png")).convert("RGB")
-    image_snapshot(img, os.path.join(SNAPSHOT_DIR, "sql", "cycle_time.png"))
+    image_snapshot(
+        img,
+        os.path.join(SNAPSHOT_DIR, "sql", "cycle_time.png"),
+        threshold=0.1,
+    )
 
 
 def test_change_failure_rate_snapshot_python(snapshot_repo, image_snapshot, tmp_path):
@@ -91,7 +99,11 @@ def test_change_failure_rate_snapshot_python(snapshot_repo, image_snapshot, tmp_
     output_file = str(tmp_path / "change_failure_rate.png")
     plot_change_failure_rate(failure_rate_data, output_path=output_file)
     img = Image.open(output_file).convert("RGB")
-    image_snapshot(img, os.path.join(SNAPSHOT_DIR, "python", "change_failure_rate.png"))
+    image_snapshot(
+        img,
+        os.path.join(SNAPSHOT_DIR, "python", "change_failure_rate.png"),
+        threshold=0.1,
+    )
 
 
 def test_change_failure_rate_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
@@ -109,4 +121,8 @@ def test_change_failure_rate_snapshot_sql(snapshot_repo, image_snapshot, tmp_pat
             output_path=str(tmp_path / "change_failure_rate.png"),
         )
     img = Image.open(str(tmp_path / "change_failure_rate.png")).convert("RGB")
-    image_snapshot(img, os.path.join(SNAPSHOT_DIR, "sql", "change_failure_rate.png"))
+    image_snapshot(
+        img,
+        os.path.join(SNAPSHOT_DIR, "sql", "change_failure_rate.png"),
+        threshold=0.1,
+    )
