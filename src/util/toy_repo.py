@@ -3,25 +3,30 @@ from src.util import git_util
 import os
 import logging
 
-# TODO: Refactor this next 
+
+# TODO: Refactor this next
 def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
 
     # Ensure that directory_to_create_repo is a string representing a valid directory path
-    if not isinstance(directory_to_create_repo, str) or not os.path.isdir(directory_to_create_repo):
-        raise ValueError("Invalid directory path provided: " + str(directory_to_create_repo))
+    if not isinstance(directory_to_create_repo, str) or not os.path.isdir(
+        directory_to_create_repo
+    ):
+        raise ValueError(
+            "Invalid directory path provided: " + str(directory_to_create_repo)
+        )
 
     # Change to the temporary directory provided
     os.chdir(directory_to_create_repo)
 
     # Initialize a new Git repository
-    git_util.git_run('init')
+    git_util.git_run("init")
 
     # Define a list of authors
     authors = [
-        ('Author 1', 'author1@example.com'),
-        ('Author 2', 'author2@example.com'),
-        ('Author 3', 'author3@example.com'),
-        ('Author 4', 'author4@example.com'),
+        ("Author 1", "author1@example.com"),
+        ("Author 2", "author2@example.com"),
+        ("Author 3", "author3@example.com"),
+        ("Author 4", "author4@example.com"),
     ]
 
     # Start date for commits (September 1, 2023)
@@ -31,13 +36,13 @@ def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
     for i in range(1, 13):
         author_name, author_email = authors[i % len(authors)]
         commit_date = start_date + datetime.timedelta(weeks=i - 1)
-        topic_branch_name = f'topic-branch-{i}'
-        git_util.git_run('checkout', '-b', topic_branch_name)
+        topic_branch_name = f"topic-branch-{i}"
+        git_util.git_run("checkout", "-b", topic_branch_name)
 
-        with open(f'file{i}.txt', 'w') as file:
-            file.write(f'Commit {i} by {author_name}')
+        with open(f"file{i}.txt", "w") as file:
+            file.write(f"Commit {i} by {author_name}")
 
-        git_util.git_run('add', f'file{i}.txt')
+        git_util.git_run("add", f"file{i}.txt")
 
         # Modify commit message to include 'bugfix' or 'hotfix' at certain intervals
         commit_msg = f"Commit {i} by {author_name}"
@@ -46,18 +51,26 @@ def create_git_repo_with_timed_commits_and_branches(directory_to_create_repo):
         elif i % 3 == 0:  # Every 3rd commit
             commit_msg += " - bugfix"
 
-        git_util.git_run('commit', '-m', commit_msg, '--author', f'{author_name} <{author_email}>', '--date', commit_date.strftime('%Y-%m-%dT%H:%M:%S'))
+        git_util.git_run(
+            "commit",
+            "-m",
+            commit_msg,
+            "--author",
+            f"{author_name} <{author_email}>",
+            "--date",
+            commit_date.strftime("%Y-%m-%dT%H:%M:%S"),
+        )
 
-        git_util.git_run('checkout', 'main')
-        git_util.git_run('merge', topic_branch_name)
+        git_util.git_run("checkout", "main")
+        git_util.git_run("merge", topic_branch_name)
 
 
 class ToyRepoCreator:
     """
     A utility class for creating and managing a Git repository with custom commit patterns.
 
-    This class allows for initializing a new Git repository in a specified directory 
-    and creating commits with configurable time intervals and authors. It supports 
+    This class allows for initializing a new Git repository in a specified directory
+    and creating commits with configurable time intervals and authors. It supports
     creating both evenly and unevenly spaced commits.
 
     Attributes:
@@ -69,7 +82,7 @@ class ToyRepoCreator:
         initialize_repo(): Initializes a new Git repository in the specified directory.
         create_commit(file_index, author_name, author_email, commit_date):
             Creates a commit in the repository.
-        create_custom_commits(commit_intervals): Creates multiple commits in the 
+        create_custom_commits(commit_intervals): Creates multiple commits in the
             repository based on provided intervals.
 
     # Example usage
@@ -85,28 +98,28 @@ class ToyRepoCreator:
     def __init__(self, directory):
         self.directory = directory
         self.authors = [
-            ('Author 1', 'author1@example.com'),
-            ('Author 2', 'author2@example.com'),
-            ('Author 3', 'author3@example.com'),
-            ('Author 4', 'author4@example.com'),
+            ("Author 1", "author1@example.com"),
+            ("Author 2", "author2@example.com"),
+            ("Author 3", "author3@example.com"),
+            ("Author 4", "author4@example.com"),
         ]
         self.start_date = datetime.datetime(2023, 9, 1)
 
     def initialize_repo(self):
         os.chdir(self.directory)
-        git_util.git_run('init')
+        git_util.git_run("init")
 
     def create_commit(self, file_index, author_name, author_email, commit_date):
-        filename = f'file{file_index}.txt'
+        filename = f"file{file_index}.txt"
 
-        with open(filename, 'w') as file:
-            file.write(f'Commit {file_index} by {author_name}')
+        with open(filename, "w") as file:
+            file.write(f"Commit {file_index} by {author_name}")
 
-        git_util.git_run('add', filename)
+        git_util.git_run("add", filename)
 
-        formatted_date = commit_date.strftime('%Y-%m-%dT%H:%M:%S')
-        os.environ['GIT_COMMITTER_DATE'] = formatted_date
-        os.environ['GIT_AUTHOR_DATE'] = formatted_date
+        formatted_date = commit_date.strftime("%Y-%m-%dT%H:%M:%S")
+        os.environ["GIT_COMMITTER_DATE"] = formatted_date
+        os.environ["GIT_AUTHOR_DATE"] = formatted_date
 
         # Modify commit message to include 'bugfix' or 'hotfix'
         commit_msg = f"Commit {file_index} by {author_name}"
@@ -115,32 +128,56 @@ class ToyRepoCreator:
         elif file_index % 3 == 0:  # Every 3rd commit
             commit_msg += " - bugfix"
 
-        git_util.git_run('commit', '-m', commit_msg, '--author', f'{author_name} <{author_email}>')
+        git_util.git_run(
+            "commit", "-m", commit_msg, "--author", f"{author_name} <{author_email}>"
+        )
 
-        del os.environ['GIT_COMMITTER_DATE']
-        del os.environ['GIT_AUTHOR_DATE']
+        del os.environ["GIT_COMMITTER_DATE"]
+        del os.environ["GIT_AUTHOR_DATE"]
 
     def create_custom_commits(self, commit_intervals):
         self.initialize_repo()
 
         for i, interval in enumerate(commit_intervals, start=1):
-            logging.debug('======= i =======: \n%s', i)
+            logging.debug("======= i =======: \n%s", i)
             author_name, author_email = self.authors[i % len(self.authors)]
-            logging.debug('======= author_name =======: \n%s', author_name)
-            logging.debug('======= author_email =======: \n%s', author_email)
+            logging.debug("======= author_name =======: \n%s", author_name)
+            logging.debug("======= author_email =======: \n%s", author_email)
             commit_date = self.start_date + datetime.timedelta(days=interval)
-            logging.debug('======= commit_date =======: \n%s', commit_date)
+            logging.debug("======= commit_date =======: \n%s", commit_date)
             self.create_commit(i, author_name, author_email, commit_date)
-
 
     def create_custom_commits_single_author(self, commit_intervals):
         self.initialize_repo()
 
         for i, interval in enumerate(commit_intervals, start=1):
-            logging.debug('======= i =======: \n%s', i)
-            author_name, author_email = self.authors[0][0], self.authors[0][1]  
-            logging.debug('======= author_name =======: \n%s', author_name)
-            logging.debug('======= author_email =======: \n%s', author_email)
+            logging.debug("======= i =======: \n%s", i)
+            author_name, author_email = self.authors[0][0], self.authors[0][1]
+            logging.debug("======= author_name =======: \n%s", author_name)
+            logging.debug("======= author_email =======: \n%s", author_email)
             commit_date = self.start_date + datetime.timedelta(days=interval)
-            logging.debug('======= commit_date =======: \n%s', commit_date)
+            logging.debug("======= commit_date =======: \n%s", commit_date)
             self.create_commit(i, author_name, author_email, commit_date)
+
+    def create_commits_with_duplicate_timestamps(self, day_batches=None):
+        """
+        Create commits with duplicate timestamps to exhibit Python vs SQL differences.
+        Per docs/cycle_time_python_vs_sql_differences.md: when multiple commits share
+        the same (author, committed_date), Python pairs by log order, SQL by ORDER BY
+        committed_date (undefined among ties).
+
+        day_batches: list of tuples, each tuple = day offsets for commits that share
+        the same timestamp. E.g. [(7, 7, 7), (14, 14, 14), (21, 21, 21)] -> 3 commits
+        at day 7, 3 at day 14, 3 at day 21 (9 total). Default: [(7, 7, 7), (14, 14, 14), (21, 21, 21)]
+        """
+        if day_batches is None:
+            # Span multiple months so charts have 3+ data points (polyfit needs 2+)
+            day_batches = [(7, 7, 7), (37, 37, 37), (67, 67, 67)]
+        self.initialize_repo()
+        file_index = 1
+        author_name, author_email = self.authors[0][0], self.authors[0][1]
+        for batch in day_batches:
+            commit_date = self.start_date + datetime.timedelta(days=batch[0])
+            for _ in batch:
+                self.create_commit(file_index, author_name, author_email, commit_date)
+                file_index += 1
