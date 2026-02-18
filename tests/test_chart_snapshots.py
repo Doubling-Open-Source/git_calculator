@@ -5,8 +5,6 @@ Per docs/cycle_time_python_vs_sql_differences.md.
 """
 
 import os
-import subprocess
-import tempfile
 
 import pytest
 from PIL import Image
@@ -16,7 +14,12 @@ from src.calculators import change_failure_calculator as cfc
 from src.calculators import cycle_time_by_commits_calculator as cycle_calc
 from src.calculators.sqlite_lake import SqliteLake
 from src.util.toy_repo import ToyRepoCreator
-from src.visualizers.chart_generator import plot_cycle_time, plot_change_failure_rate
+from src.visualizers.chart_generator import (
+    plot_cycle_time,
+    plot_cycle_time_from_db,
+    plot_change_failure_rate,
+    plot_change_failure_rate_from_db,
+)
 
 SNAPSHOT_DIR = os.path.join(os.path.dirname(__file__), "fixtures", "snapshots")
 os.makedirs(SNAPSHOT_DIR, exist_ok=True)
@@ -59,20 +62,20 @@ def test_cycle_time_snapshot_python(snapshot_repo, image_snapshot, tmp_path):
 
 
 def test_cycle_time_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
-    """SQL calc -> plot_cycle_time -> snapshot."""
+    """SQL path: plot queries DB directly -> snapshot."""
     os.chdir(snapshot_repo)
+    from src.util.git_util import get_repo_id
+
     logs = git_log()
-    lake = SqliteLake()
-    conn = lake.create_db()
-    try:
-        cycle_time_data = lake.commit_statistics_normalized_by_month_sql(
-            conn, logs=logs
+    repo_id = get_repo_id()
+    with SqliteLake() as lake:
+        lake.load_logs(logs, repo_id)
+        plot_cycle_time_from_db(
+            lake.conn,
+            repo_id,
+            output_path=str(tmp_path / "cycle_time.png"),
         )
-    finally:
-        conn.close()
-    output_file = str(tmp_path / "cycle_time.png")
-    plot_cycle_time(cycle_time_data, output_path=output_file)
-    img = Image.open(output_file).convert("RGB")
+    img = Image.open(str(tmp_path / "cycle_time.png")).convert("RGB")
     image_snapshot(img, os.path.join(SNAPSHOT_DIR, "sql", "cycle_time.png"))
 
 
@@ -92,16 +95,18 @@ def test_change_failure_rate_snapshot_python(snapshot_repo, image_snapshot, tmp_
 
 
 def test_change_failure_rate_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
-    """SQL calc -> plot_change_failure_rate -> snapshot."""
+    """SQL path: plot queries DB directly -> snapshot."""
     os.chdir(snapshot_repo)
+    from src.util.git_util import get_repo_id
+
     logs = git_log()
-    lake = SqliteLake()
-    conn = lake.create_db()
-    try:
-        failure_rate_data = lake.calculate_change_failure_rate_sql(conn, logs=logs)
-    finally:
-        conn.close()
-    output_file = str(tmp_path / "change_failure_rate.png")
-    plot_change_failure_rate(failure_rate_data, output_path=output_file)
-    img = Image.open(output_file).convert("RGB")
+    repo_id = get_repo_id()
+    with SqliteLake() as lake:
+        lake.load_logs(logs, repo_id)
+        plot_change_failure_rate_from_db(
+            lake.conn,
+            repo_id,
+            output_path=str(tmp_path / "change_failure_rate.png"),
+        )
+    img = Image.open(str(tmp_path / "change_failure_rate.png")).convert("RGB")
     image_snapshot(img, os.path.join(SNAPSHOT_DIR, "sql", "change_failure_rate.png"))

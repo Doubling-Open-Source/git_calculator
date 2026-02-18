@@ -8,9 +8,7 @@ matches. Edge case: commit on month boundary with TZ differences could assign to
 """
 
 import sqlite3
-from typing import List, Tuple, Optional, Any
-
-from . import schema
+from typing import List, Tuple
 
 
 def _sql_change_failure_by_month() -> str:
@@ -51,11 +49,29 @@ def query_change_failure_by_month_sql(
 def calculate_change_failure_rate_sql(
     conn: sqlite3.Connection,
     repo_id: str,
-    logs: Optional[List[Any]] = None,
 ) -> List[Tuple[str, float]]:
     """
     SQL equivalent of extract_commit_data + calculate_change_failure_rate.
-    Returns [(month, rate), ...] sorted by month, same shape as CLI expects.
+    Returns [(month, rate), ...] sorted by month. Requires commits populated.
     """
-    schema.populate_commits_from_log(conn, repo_id, logs=logs)
     return query_change_failure_by_month_sql(conn, repo_id)
+
+
+def query_change_failure_chart_sql(
+    conn: sqlite3.Connection,
+    repo_id: str,
+) -> List[Tuple[str, float]]:
+    """
+    Chart-ready change failure: (month, rate) sorted by month.
+    All prepare logic in SQL for Grafana/MySQL portability.
+    Requires commits already populated.
+    """
+    return query_change_failure_by_month_sql(conn, repo_id)
+
+
+def get_change_failure_chart_data_sql(
+    conn: sqlite3.Connection,
+    repo_id: str,
+) -> List[Tuple[str, float]]:
+    """Chart-ready change failure. Requires commits populated."""
+    return query_change_failure_chart_sql(conn, repo_id)

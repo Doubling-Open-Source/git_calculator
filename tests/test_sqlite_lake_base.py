@@ -36,28 +36,30 @@ def test_create_db_applies_schema():
     conn.close()
 
 
-def test_sqlite_lake_repo_id_format():
-    """SqliteLake.repo_id is DevLake-style local:<name>."""
+def test_sqlite_lake_load_logs_requires_repo_id():
+    """Lake.load_logs requires repo_id (tests lake API, not git_util)."""
     lake = SqliteLake()
-    assert lake.repo_id.startswith("local:")
+    with pytest.raises(TypeError):
+        lake.load_logs([])
 
 
 def test_populate_commits_from_log_inserts_rows(temp_directory):
     from src.git_ir import git_log
+    from src.util.git_util import get_repo_id
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3, 4, 5])
     logs = git_log()
+    repo_id = get_repo_id()
 
     lake = SqliteLake()
-    conn = create_db()
-    count = lake.populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute(
-        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,)
+    count = lake.populate_commits_from_log(logs, repo_id)
+    cur = lake.conn.execute(
+        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (repo_id,)
     )
     db_count = cur.fetchone()[0]
-    conn.close()
+    lake.close()
 
     assert count == len(logs)
     assert db_count == len(logs)
@@ -65,20 +67,21 @@ def test_populate_commits_from_log_inserts_rows(temp_directory):
 
 def test_populate_commits_from_log_replaces_on_same_repo(temp_directory):
     from src.git_ir import git_log
+    from src.util.git_util import get_repo_id
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3])
     logs = git_log()
+    repo_id = get_repo_id()
 
     lake = SqliteLake()
-    conn = create_db()
-    lake.populate_commits_from_log(conn, logs=logs)
-    lake.populate_commits_from_log(conn, logs=logs)
-    cur = conn.execute(
-        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (lake.repo_id,)
+    lake.populate_commits_from_log(logs, repo_id)
+    lake.populate_commits_from_log(logs, repo_id)
+    cur = lake.conn.execute(
+        "SELECT COUNT(*) FROM commits WHERE _raw_data_params = ?", (repo_id,)
     )
     count = cur.fetchone()[0]
-    conn.close()
+    lake.close()
 
     assert count == len(logs)

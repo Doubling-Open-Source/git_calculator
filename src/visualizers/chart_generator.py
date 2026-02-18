@@ -3,7 +3,9 @@ import pandas as pd
 import seaborn as sns
 import numpy as np
 import os
-from src.util.git_util import get_repo_name
+from typing import Any, List, Optional
+
+from src.util.git_util import get_repo_id, get_repo_name
 
 
 def setup_plot_style():
@@ -122,8 +124,36 @@ def prepare_change_failure_chart_data(failure_rate_data):
     return df.sort_values("Month")
 
 
+def prepare_cycle_time_chart_data_from_db(conn, repo_id: str):
+    """
+    Get chart-ready cycle time from DB. Prepare (p75→days, etc.) done in SQL.
+    Requires commits already populated (call lake.load_logs first).
+    """
+    from src.calculators.sqlite_lake import cycle_time_by_commits_calculator as cycle
+
+    rows = cycle.query_cycle_time_chart_sql(conn, repo_id)
+    df = pd.DataFrame(rows, columns=["Month", "p75", "std"])
+    df["Month"] = pd.to_datetime(df["Month"], format="%Y-%m")
+    return df
+
+
+def prepare_change_failure_chart_data_from_db(conn, repo_id: str):
+    """
+    Get chart-ready change failure from DB. Prepare done in SQL.
+    Requires commits already populated (call lake.load_logs first).
+    """
+    from src.calculators.sqlite_lake import change_failure_calculator as cf
+
+    rows = cf.query_change_failure_chart_sql(conn, repo_id)
+    df = pd.DataFrame(rows, columns=["Month", "Rate"])
+    df["Month"] = pd.to_datetime(df["Month"], format="%Y-%m")
+    return df.sort_values("Month")
+
+
 def plot_cycle_time(
-    cycle_time_data, output_file="cycle_time_chart.png", output_path=None
+    cycle_time_data,
+    output_file="cycle_time_chart.png",
+    output_path=None,
 ):
     """
     Generate a chart for cycle time metrics with trendline.
@@ -135,8 +165,26 @@ def plot_cycle_time(
     """
     setup_plot_style()
     df = prepare_cycle_time_chart_data(cycle_time_data)
+    _render_cycle_time_chart(df, output_file, output_path)
 
-    # Create the plot
+
+def plot_cycle_time_from_db(
+    conn,
+    repo_id: str,
+    output_file="cycle_time_chart.png",
+    output_path=None,
+):
+    """
+    Generate cycle time chart by querying DB directly.
+    Requires commits already populated (call lake.load_logs first).
+    """
+    setup_plot_style()
+    df = prepare_cycle_time_chart_data_from_db(conn, repo_id)
+    _render_cycle_time_chart(df, output_file, output_path)
+
+
+def _render_cycle_time_chart(df, output_file, output_path):
+    """Render cycle time chart from prepared DataFrame."""
     plt.figure(figsize=(12, 6))
 
     # Plot P75 cycle time with the same blue color as change failure rate
@@ -211,7 +259,9 @@ def plot_cycle_time(
 
 
 def plot_change_failure_rate(
-    failure_rate_data, output_file="change_failure_rate_chart.png", output_path=None
+    failure_rate_data,
+    output_file="change_failure_rate_chart.png",
+    output_path=None,
 ):
     """
     Generate a chart for change failure rate with trendline.
@@ -223,8 +273,26 @@ def plot_change_failure_rate(
     """
     setup_plot_style()
     df = prepare_change_failure_chart_data(failure_rate_data)
+    _render_change_failure_chart(df, output_file, output_path)
 
-    # Create the plot
+
+def plot_change_failure_rate_from_db(
+    conn,
+    repo_id: str,
+    output_file="change_failure_rate_chart.png",
+    output_path=None,
+):
+    """
+    Generate change failure rate chart by querying DB directly.
+    Requires commits already populated (call lake.load_logs first).
+    """
+    setup_plot_style()
+    df = prepare_change_failure_chart_data_from_db(conn, repo_id)
+    _render_change_failure_chart(df, output_file, output_path)
+
+
+def _render_change_failure_chart(df, output_file, output_path):
+    """Render change failure rate chart from prepared DataFrame."""
     plt.figure(figsize=(12, 6))
 
     # Plot failure rate with a muted blue color
@@ -374,10 +442,13 @@ def plot_work_categories(client_name, csv_filename=None, title=None):
 
 
 def generate_charts(
-    cycle_time_data=None, failure_rate_data=None, save_data=False, prefix=None
+    cycle_time_data=None,
+    failure_rate_data=None,
+    save_data=False,
+    prefix=None,
 ):
     """
-    Generate charts for both metrics if data is provided.
+    Generate charts for both metrics from in-memory data (Python path).
 
     Args:
         cycle_time_data: List of tuples (month, sum, average, p75, std)
@@ -390,13 +461,47 @@ def generate_charts(
 
     if save_data:
         save_metrics_data(cycle_time_data, failure_rate_data, prefix)
-
     if cycle_time_data:
         plot_cycle_time(cycle_time_data, f"{prefix}cycle_time_chart.png")
     if failure_rate_data:
         plot_change_failure_rate(
             failure_rate_data, f"{prefix}change_failure_rate_chart.png"
         )
+
+
+def generate_charts_sql(logs=None, repo_id=None, save_data=False, prefix=None):
+    """
+    Generate charts for both metrics by querying the lake DB directly (SQL path).
+    Loads logs once, then queries. Creates SqliteLake internally.
+
+    Args:
+        logs: Git logs for populate. If None, uses git_log().
+        repo_id: Repo to use. If None, uses get_repo_id() (cwd).
+        save_data: Whether to save the data to CSV files
+        prefix: Optional prefix for the output files. If None, uses repo name.
+    """
+    if prefix is None:
+        prefix = f"{get_repo_name()}_"
+    repo_id = repo_id or get_repo_id()
+
+    from src.calculators.sqlite_lake import SqliteLake
+
+    with SqliteLake() as lake:
+        lake.load_logs(logs, repo_id)
+        plot_cycle_time_from_db(
+            lake.conn,
+            repo_id,
+            output_file=f"{prefix}cycle_time_chart.png",
+        )
+        plot_change_failure_rate_from_db(
+            lake.conn,
+            repo_id,
+            output_file=f"{prefix}change_failure_rate_chart.png",
+        )
+        if save_data:
+            ct_raw = lake.commit_statistics_normalized_by_month_sql(repo_id=repo_id)
+            cf_raw = lake.calculate_change_failure_rate_sql(repo_id=repo_id)
+            save_metrics_data(ct_raw, cf_raw, prefix)
 
 
 def plot_sprint_completion(client_name, csv_filename=None, title=None):
