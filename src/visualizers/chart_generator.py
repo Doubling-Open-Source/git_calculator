@@ -13,6 +13,8 @@ def setup_plot_style():
     plt.style.use("seaborn-v0_8")
     sns.set_palette("husl")
     plt.rcParams["figure.figsize"] = [12, 6]
+    # Use a font bundled with matplotlib so chart output is identical on Linux and macOS (CI snapshots).
+    plt.rcParams["font.family"] = "DejaVu Sans"
     plt.rcParams["font.size"] = 10
     plt.rcParams["axes.grid"] = True
     plt.rcParams["grid.alpha"] = 0.3
