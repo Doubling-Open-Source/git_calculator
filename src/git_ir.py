@@ -1,15 +1,10 @@
 from collections import defaultdict
 from src.util.git_util import git_run
-from dataclasses import dataclass, field
-from subprocess import run as sp_run
-import time
 from functools import partial
-from statistics import mean, median, stdev, quantiles
-from io import StringIO
-import os
-from pprint import pprint
+from statistics import quantiles
 
-quartiles = partial(quantiles, method='inclusive', n=4)
+quartiles = partial(quantiles, method="inclusive", n=4)
+
 
 class git_sha(str):
     """
@@ -34,22 +29,23 @@ class git_sha(str):
         __repr__(self): Return a string representation of the gitsha with a length of _show_.
         calibrate_min(cls): Calibrate the display length of gitsha objects with common prefixes.
     """
+
     # Set to store all instances of the gitsha class
     __all_gitsha__ = set()
 
     def __new__(cls, sha):
-        sha = sha or ''  # Strip the None
+        sha = sha or ""  # Strip the None
         res = super().__new__(cls, sha)
         res._show_ = 4
         cls.__all_gitsha__.add(res)
         return res
 
     def __str__(self):
-        return self[:self._show_]
-    
+        return self[: self._show_]
+
     def __repr__(self):
-        return self[:self._show_]
-    
+        return self[: self._show_]
+
     @classmethod
     def get_instance(cls, sha_value):
         """Retrieve a gitsha instance by its SHA value."""
@@ -73,7 +69,7 @@ class git_sha(str):
 
             # Populate the dictionary with the current _show_ state
             for sha in cls.__all_gitsha__:
-                current_prefix = sha[:sha._show_]
+                current_prefix = sha[: sha._show_]
                 sha_dict[current_prefix].append(sha)
 
             # Check for duplicates and adjust _show_ accordingly
@@ -84,9 +80,12 @@ class git_sha(str):
 
                     # Since these are duplicates, increase their _show_ attribute
                     for item in prefix_group:
-                        item._show_ += 1  # This will affect their representation in the next pass
+                        item._show_ += (
+                            1  # This will affect their representation in the next pass
+                        )
 
         # The loop continues until there are no duplicates, ensuring all shas are unique with their _show_ state.
+
 
 class git_obj(git_sha):
     __all_obj__ = {}
@@ -109,7 +108,7 @@ class git_obj(git_sha):
         res = super().__new__(cls, sha)
         cls.__all_obj__[sha] = res
         return res
-    
+
     def _link(self):
         """
         Identifies and links parent objects to their children, establishing a bidirectional
@@ -134,7 +133,7 @@ class git_obj(git_sha):
         for o in cls.__all_obj__.values():
             o._link()
 
-    @classmethod    
+    @classmethod
     def _from_cat_file(cls, sha):
         """
         Generates a 'git_obj' instance based on the content extracted from the 'git cat-file' command,
@@ -150,33 +149,32 @@ class git_obj(git_sha):
         git_obj
             The newly created 'git_obj' instance with properties extracted from 'git cat-file'.
         """
-        cmd = git_run('cat-file','-p', sha)
+        cmd = git_run("cat-file", "-p", sha)
         res = git_obj(sha)
 
         tree = auth = None
         res._parents = []
         for line in cmd.stdout.splitlines():
-            denom, _ ,line = line.strip().partition(' ')
-            if denom == 'tree':
+            denom, _, line = line.strip().partition(" ")
+            if denom == "tree":
                 tree = line
-            elif denom == 'parent':
+            elif denom == "parent":
                 res._parents.append(line)
-            elif denom == 'committer':
-                line, timestamp, _tz = line.rsplit(' ', 5)
+            elif denom == "committer":
+                line, timestamp, _tz = line.rsplit(" ", 5)
                 res._when = int(timestamp)  # TODO: Do something with tz
-                if line.endswith('>'):
-                    auth, _, email= line[:-1].partition('<')
+                if line.endswith(">"):
+                    auth, _, email = line[:-1].partition("<")
                     auth = auth.strip()
                     res._author = (auth, email)
                 else:
                     res._author = (line.strip(), None)
 
-
-        logging.debug('======= res in _from_cat_file =======: \n%s', res)
+        logging.debug("======= res in _from_cat_file =======: \n%s", res)
         return res
 
     @classmethod
-    def _from_show(cls, sha):       
+    def _from_show(cls, sha):
         """
         Constructs a 'git_obj' instance based on the output of the 'git show' command. It parses the
         command's output to extract detailed commit information.
@@ -190,10 +188,10 @@ class git_obj(git_sha):
         --------
         git_obj
             The 'git_obj' instance initialized with commit details.
-        """ 
-        cmd = git_run('show', r'--format=%ct|%H|%T|%P|%ae|%an', '-s', ''+sha)
+        """
+        cmd = git_run("show", r"--format=%ct|%H|%T|%P|%ae|%an", "-s", "" + sha)
         line = cmd.stdout.strip()
-        parts = line.split('|', 5)
+        parts = line.split("|", 5)
         parts[3] = parts[3].split()  # Multiple parents
         return git_obj.commit(*parts)
 
@@ -220,9 +218,17 @@ class git_obj(git_sha):
                 if k.startswith(sha):
                     return v
             return cls._from_show(sha)
-    
+
     @classmethod
-    def commit(cls, commit_time, commit_hash, tree_hash, parent_hashs, author_email, author_name):
+    def commit(
+        cls,
+        commit_time,
+        commit_hash,
+        tree_hash,
+        parent_hashs,
+        author_email,
+        author_name,
+    ):
         """
         Instantiates and initializes a 'git_obj' instance that represents a detailed Git commit,
         including information about the commit's time, tree, parents, and author.
@@ -246,16 +252,16 @@ class git_obj(git_sha):
         --------
         git_obj
             The newly initialized 'git_obj' instance representing a commit.
-        """        
+        """
         res = cls(commit_hash)
-        res._type = '<<' if len(parent_hashs) > 1 else '<'
+        res._type = "<<" if len(parent_hashs) > 1 else "<"
         res._when = int(commit_time)
         res._author = (author_email, author_name)
         res._tree = git_sha(tree_hash)
         res._children = []
         res._parents = tuple(git_sha(p) for p in parent_hashs)
         return res
-            
+
     def __repr__(self):
         """
         Generates a human-readable representation of the 'git_obj' instance, primarily for debugging
@@ -265,15 +271,15 @@ class git_obj(git_sha):
         --------
         str
             A string representation of the 'git_obj' instance.
-        """        
-        auth = self._author[0] if '@' in self._author[0] else repr(self._author[1])
-        par = ''
+        """
+        auth = self._author[0] if "@" in self._author[0] else repr(self._author[1])
+        par = ""
         if len(self._parents) > 1:
-            par = ','.join(repr(p) for p in self._parents)
+            par = ",".join(repr(p) for p in self._parents)
         elif len(self._parents) == 1:
-            par = repr(self._parents[0]) 
+            par = repr(self._parents[0])
         return f"{self!s} {self._type} {par} {auth}"
-    
+
 
 def all_objects():
     """
@@ -290,12 +296,12 @@ def all_objects():
         >>> all_objects()
         ['d1a7f4b29c79a11f08f2cdac7fe13c3d9ec19025', '6a2e78cf73ea38c614f96e8950a245b52ad7fe7c']
     """
-    cmd = git_run('rev-list', '--all', '--objects')
+    cmd = git_run("rev-list", "--all", "--objects")
     res = {git_sha(line.split()[0]): None for line in cmd.stdout.splitlines()}
     res = list(res.keys())  # Sorted uniq
     return res
 
-#def git_log():
+    # def git_log():
     """
     Retrieve and parse Git commit log entries from the entire Git repository.
 
@@ -326,18 +332,24 @@ def all_objects():
             ...
         ]
     """
+
+
 def git_log():
     def to_obj(line):
-        parts = line.split('|', 5)
+        parts = line.split("|", 5)
         parts[3] = parts[3].split()  # Multiple parents
         return git_obj.commit(*parts)
+
     res = [
         to_obj(line)
-        for line in git_run('log','--all','--reflog',r'--format=%ct|%H|%T|%P|%ae|%an').stdout.splitlines()
+        for line in git_run(
+            "log", "--all", "--reflog", r"--format=%ct|%H|%T|%P|%ae|%an"
+        ).stdout.splitlines()
     ]
     git_obj.link_children()
     git_sha.calibrate_min()
     return res
+
 
 def format_git_logs_as_string(log_entries):
     """
@@ -351,7 +363,7 @@ def format_git_logs_as_string(log_entries):
     """
     formatted_output = "Commit Chain:\n"
     for entry in log_entries:
-        formatted_output += entry+"\n"
+        formatted_output += entry + "\n"
     return formatted_output
 
 
@@ -375,11 +387,18 @@ def git_branches():
             ...
         }
     """
+
     def to_obj(line):
-        parts = line.split(' ', 2)
+        parts = line.split(" ", 2)
         return (parts[0], parts[2])
+
     res = [
         to_obj(line)
-        for line in git_run('branch','-al','--no-abbrev',r'--format=%(objectname) %(objecttype) %(refname)').stdout.splitlines()
+        for line in git_run(
+            "branch",
+            "-al",
+            "--no-abbrev",
+            r"--format=%(objectname) %(objecttype) %(refname)",
+        ).stdout.splitlines()
     ]
     return dict(res)

@@ -50,7 +50,7 @@ failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failu
 ca.analyze_commits()
 
 # Generate charts and save data
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True)
 ```
@@ -74,7 +74,7 @@ from src.calculators import chart_generator as cg
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
 
 # Generate new charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
@@ -173,7 +173,7 @@ cd tensorflow
 
 Analyze:
 ```py
-# Launch python3 
+# Launch python3
 python
 # Paste:
 from src import git_ir as gir
@@ -193,7 +193,7 @@ INTERVAL START, SUM, AVERAGE, p75 CYCLE TIME (minutes), std CYCLE TIME
 
 To calculate change failure rate:
 ```py
-# Launch python3 
+# Launch python3
 python
 # Paste:
 from src import git_ir as gir
@@ -215,7 +215,7 @@ The change failure rate is calculated by identifying commits that contain keywor
 
 To analyze commit trends by author:
 ```py
-# Launch python3 
+# Launch python3
 python
 # Paste:
 from src.calculators import commit_analyzer as ca
@@ -250,7 +250,7 @@ data_by_month = cfc.extract_commit_data(logs)
 failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
 
 # Save data and generate charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True)
 
@@ -261,7 +261,7 @@ from src.calculators import chart_generator as cg
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
 
 # Generate new charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
@@ -279,14 +279,14 @@ The repository name is automatically detected from:
 You can also use a custom prefix instead of the repository name:
 ```py
 # Save with custom prefix
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True,
                   prefix='team_a_')
 
 # Load with custom prefix
 cycle_time_data, failure_rate_data = cg.load_metrics_data(prefix='team_a_')
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
@@ -331,7 +331,7 @@ This creates a `repo_config.json` file with the following structure:
       "description": "Frontend application repository"
     },
     {
-      "name": "backend-api", 
+      "name": "backend-api",
       "path_or_url": "https://github.com/company/backend-api.git",
       "branch": "develop",
       "description": "Backend API repository"
@@ -383,22 +383,22 @@ with MultiRepoManager() as repo_manager:
     repo_manager.add_repository("frontend", "/path/to/frontend")
     repo_manager.add_repository("backend", "https://github.com/user/backend.git")
     repo_manager.add_repository("mobile", "git@github.com:user/mobile.git")
-    
+
     # Clone remote repositories
     clone_results = repo_manager.clone_repositories()
     print(f"Clone results: {clone_results}")
-    
+
     # Calculate metrics for all repositories
     calculator = MultiRepoCalculator(repo_manager)
     all_metrics = calculator.calculate_all_metrics()
-    
+
     # Save aggregated metrics
     calculator.save_aggregated_metrics(all_metrics, "multi_repo_metrics")
-    
+
     # Generate comparison charts
     chart_generator = MultiRepoChartGenerator("multi_repo_charts")
     generated_charts = chart_generator.generate_all_comparison_charts(all_metrics)
-    
+
     print(f"Generated {len(generated_charts)} comparison charts")
 ```
 

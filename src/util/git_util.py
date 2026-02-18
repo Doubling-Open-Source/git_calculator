@@ -44,8 +44,6 @@ def git_run(*args):
         CompletedProcess: An object containing information about the executed
         command, including its return code, standard output, and standard error.
     """
-    print('# $> git', *args)
-    res = sp_run(['git']+list(args), check=True, text=True, capture_output=True)
+    print("# $> git", *args)
+    res = sp_run(["git"] + list(args), check=True, text=True, capture_output=True)
     return res
-
-

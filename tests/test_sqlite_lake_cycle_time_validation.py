@@ -84,7 +84,9 @@ def test_commit_statistics_parity(temp_directory):
     conn = lake.create_db()
     sql_result = lake.commit_statistics_sql(conn, bucket_size, logs=logs)
 
-    assert py_result == sql_result, f"commit_statistics != commit_statistics_sql: {py_result} vs {sql_result}"
+    assert py_result == sql_result, (
+        f"commit_statistics != commit_statistics_sql: {py_result} vs {sql_result}"
+    )
 
 
 def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
@@ -118,7 +120,9 @@ def test_commit_statistics_normalized_by_month_parity(temp_directory):
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
-    trc.create_custom_commits_single_author([10, 11, 12, 13, 34, 35, 41, 49, 60, 75, 80, 85])
+    trc.create_custom_commits_single_author(
+        [10, 11, 12, 13, 34, 35, 41, 49, 60, 75, 80, 85]
+    )
     logs = git_log()
 
     py_deltas = calculate_time_deltas(logs)
@@ -151,7 +155,9 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
         conn, bucket_size=bucket_size, logs=None
     )
 
-    assert py_result == sql_result, f"cycle_time_between_commits_by_author != _sql: {py_result} vs {sql_result}"
+    assert py_result == sql_result, (
+        f"cycle_time_between_commits_by_author != _sql: {py_result} vs {sql_result}"
+    )
 
 
 def test_sqlite_by_month_stats_match_python(temp_directory):
@@ -159,7 +165,9 @@ def test_sqlite_by_month_stats_match_python(temp_directory):
     from src.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
-    trc.create_custom_commits_single_author([10, 11, 12, 13, 34, 35, 41, 49, 60, 75, 80, 85])
+    trc.create_custom_commits_single_author(
+        [10, 11, 12, 13, 34, 35, 41, 49, 60, 75, 80, 85]
+    )
     logs = git_log()
 
     py_deltas = calculate_time_deltas(logs)

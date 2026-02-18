@@ -1,5 +1,6 @@
 from src.git_ir import git_sha
 
+
 def test_gitsha_creation():
     # Test creating gitsha instances
     sha1 = git_sha("abcdef1234")
@@ -9,6 +10,7 @@ def test_gitsha_creation():
     assert isinstance(sha1, git_sha)
     assert isinstance(sha2, git_sha)
 
+
 def test_gitsha_display_length():
     # Test the default display length
     sha = git_sha("abcdef1234")
@@ -17,6 +19,7 @@ def test_gitsha_display_length():
     # Test custom display length
     sha._show_ = 6
     assert str(sha) == "abcdef"
+
 
 def test_gitsha_calibrate_min():
     # Create gitsha instances with common prefixes
@@ -35,4 +38,3 @@ def test_gitsha_calibrate_min():
     # Now check the updated _show_ values
     assert sha1_updated._show_ == 7
     assert sha2_updated._show_ == 7
-

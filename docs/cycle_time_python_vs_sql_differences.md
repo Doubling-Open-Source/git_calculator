@@ -50,37 +50,37 @@ We **cannot** add a column (e.g. `log_order`) to the commits table in the **DevL
 - **Implementation:** No code change. Document that:
   - Deltas and stats may differ when multiple commits share the same second per author.
   - For dashboards/reporting, the SQL (Grafana/MySQL) path is the source of truth; Python remains the reference implementation for single-repo tooling.
-- **Pros:** No schema or query changes; matches reality of the lake.  
+- **Pros:** No schema or query changes; matches reality of the lake.
 - **Cons:** Diff on CSVs will show differences on repos with many duplicate timestamps.
 
 ### Option B: Tie-break in SQL with existing columns only
 
 - **Idea:** Make SQL ordering deterministic when `committed_date` ties, using only existing columns (e.g. `sha`).
-- **Implementation:** Change window to  
-  `ORDER BY committed_date, sha`  
+- **Implementation:** Change window to
+  `ORDER BY committed_date, sha`
   (or `ORDER BY committed_date, author_email, sha` if needed). No new columns.
-- **Pros:** Stable, reproducible SQL results; no schema change.  
+- **Pros:** Stable, reproducible SQL results; no schema change.
 - **Cons:** Order among ties will **not** match Python’s log order (it will be lexical by sha). So deltas for tied commits can still differ from Python, but at least SQL will be consistent and diffable across runs.
 
 ### Option C: Normalize Python to “SQL semantics” (match SQL in Python)
 
 - **Idea:** Change the **Python** calculator to use the same ordering rule as SQL: per author, sort by `(committed_date, sha)` and then compute deltas between consecutive rows.
 - **Implementation:** In `calculate_time_deltas`, for each author sort `commits` by `(commit._when, commit_sha)` before computing consecutive pairs. Then Python and SQL use the same pairing rule.
-- **Pros:** Python and SQL become comparable and consistent without touching the lake.  
+- **Pros:** Python and SQL become comparable and consistent without touching the lake.
 - **Cons:** Python no longer follows “strict git log order”; it follows “timestamp then sha” order. If product requirement is “exactly log order,” this is a semantic change.
 
 ### Option D: Pre-aggregate or expose deltas from an ETL that has order
 
 - **Idea:** If another system (e.g. ETL or pipeline) has access to log order when writing into the lake, it could write a **derived** table (e.g. “commit_deltas”) with one row per delta. Then Grafana/SQL would query that table instead of recomputing LAG over `commits`.
 - **Implementation:** Design a small “cycle_time_deltas” (or similar) table populated by a job that runs the Python logic (or equivalent with log order) and stores (repo_id, author_email, committed_date_newer, cycle_minutes, …). Dashboards query this table.
-- **Pros:** Lake schema for raw `commits` stays unchanged; reporting uses a well-defined, comparable metric.  
+- **Pros:** Lake schema for raw `commits` stays unchanged; reporting uses a well-defined, comparable metric.
 - **Cons:** Requires pipeline/ETL work and a new table (or view) that DevLake may or may not own.
 
 ### Option E: Document and tolerate numeric differences in comparison
 
 - **Idea:** Keep current Python and SQL as-is; document the causes above and define a **tolerance** for comparison (e.g. allow up to N minutes difference per delta when timestamps tie, or allow small aggregate drift).
 - **Implementation:** In tests or comparison scripts, compare with `abs(python - sql) <= tolerance` and/or round outputs before diff (e.g. 2 decimals for floats, integers for p75/std) to avoid float noise.
-- **Pros:** No schema or semantics change; still allows regression checks.  
+- **Pros:** No schema or semantics change; still allows regression checks.
 - **Cons:** Does not remove root cause; diffs on raw CSVs will still show differences where ties exist.
 
 ---

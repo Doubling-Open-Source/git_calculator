@@ -12,6 +12,7 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
+
 def extract_commit_data(logs):
     """
     Extract commit data and count commits containing specific keywords.
@@ -31,7 +32,9 @@ def extract_commit_data(logs):
         total_commits, fix_commits = data_by_month[month_key]
 
         # Extract commit message
-        commit_message = git_run('log', '-n', '1', '--format=%B', commit).stdout.strip().lower()
+        commit_message = (
+            git_run("log", "-n", "1", "--format=%B", commit).stdout.strip().lower()
+        )
 
         # Check for keywords in commit message
         if any(keyword in commit_message for keyword in keywords):
@@ -40,7 +43,6 @@ def extract_commit_data(logs):
         data_by_month[month_key] = (total_commits + 1, fix_commits)
 
     return data_by_month
-
 
 
 def calculate_change_failure_rate(data_by_month):
@@ -62,6 +64,7 @@ def calculate_change_failure_rate(data_by_month):
         change_failure_rates[month] = rate
     return change_failure_rates
 
+
 def change_failure_rate_to_string(change_failure_rates):
     """
     Convert change failure rate statistics to a CSV-formatted string.
@@ -78,7 +81,10 @@ def change_failure_rate_to_string(change_failure_rates):
         print(f"{month},{rate:.2f}", file=buf)
     return buf.getvalue()
 
-def write_change_failure_rate_to_file(change_failure_rates, fname='change_failure_rate_by_month.csv'):
+
+def write_change_failure_rate_to_file(
+    change_failure_rates, fname="change_failure_rate_by_month.csv"
+):
     """
     Write the change failure rate statistics to a file.
 
@@ -87,21 +93,23 @@ def write_change_failure_rate_to_file(change_failure_rates, fname='change_failur
         fname (str): Filename for the output.
     """
     stats_string = change_failure_rate_to_string(change_failure_rates)
-    with open(fname, 'wt') as fout:
+    with open(fname, "wt") as fout:
         fout.write(stats_string)
-    if fname.endswith('.csv'):
-        sp_run(['open', fname])
+    if fname.endswith(".csv"):
+        sp_run(["open", fname])
+
 
 def monthly_change_failure_analysis():
     """
     Main function to calculate and write monthly change failure rate statistics.
     """
     logs = git_log()
-    logging.debug('Logs: %s', format_git_logs_as_string(logs))
+    logging.debug("Logs: %s", format_git_logs_as_string(logs))
 
     data_by_month = extract_commit_data(logs)
     change_failure_rates = calculate_change_failure_rate(data_by_month)
     write_change_failure_rate_to_file(change_failure_rates)
+
 
 if __name__ == "__main__":
     monthly_change_failure_analysis()
