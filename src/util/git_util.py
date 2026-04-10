@@ -1,5 +1,21 @@
+"""
+Git process helpers.
+
+Backwards compatibility: existing entry points keep stable signatures and behavior:
+  ``get_repo_name``, ``get_repo_id``, ``git_run``.
+
+Additive-only policy for this module: new public names may be added; do not remove
+or narrow existing APIs without a deprecation path. Batch helpers live in the
+``# -- additive (batched commit messages) --`` section below.
+"""
+
+from __future__ import annotations
+
 import os
 from subprocess import run as sp_run
+
+# sha -> (subject %s, body %b, full_message %B) from one git log -z pass.
+CommitMessagesBatch = dict[str, tuple[str, str, str]]
 
 
 def get_repo_name():
@@ -44,6 +60,46 @@ def git_run(*args):
         CompletedProcess: An object containing information about the executed
         command, including its return code, standard output, and standard error.
     """
-    print("# $> git", *args)
+    if os.environ.get("GIT_CALCULATOR_SILENCE_GIT_RUN") != "1":
+        print("# $> git", *args)
     res = sp_run(["git"] + list(args), check=True, text=True, capture_output=True)
     return res
+
+
+# -- additive (batched commit messages) --
+
+# Unlikely in subject/body; separates fields within one git-log record when using -z.
+_GIT_MSG_FIELD_SEP = "\x1f"
+
+
+def git_log_commit_messages_batch() -> CommitMessagesBatch:
+    """
+    One git invocation: all commits (--all --reflog), same coverage as git_ir.git_log().
+
+    Returns:
+        Map full 40-char sha -> (subject %s, body %b, full_message %B) for populate + %B parity.
+    """
+    fmt = f"%H{_GIT_MSG_FIELD_SEP}%s{_GIT_MSG_FIELD_SEP}%b{_GIT_MSG_FIELD_SEP}%B"
+    res = git_run(
+        "log",
+        "--all",
+        "--reflog",
+        "-z",
+        f"--pretty=format:{fmt}",
+    )
+    out: CommitMessagesBatch = {}
+    if not res.stdout:
+        return out
+    for record in res.stdout.split("\0"):
+        if not record.strip():
+            continue
+        parts = record.split(_GIT_MSG_FIELD_SEP, 3)
+        if len(parts) < 2:
+            continue
+        sha = parts[0].strip()
+        subj = parts[1]
+        body = parts[2] if len(parts) > 2 else ""
+        raw_b = parts[3] if len(parts) > 3 else ""
+        if len(sha) == 40:
+            out[sha] = (subj, body, raw_b)
+    return out
