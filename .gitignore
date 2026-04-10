@@ -166,5 +166,10 @@ cython_debug/
 .cursor/
 .scratch/
 
+# Local schema validation (sensitive clone paths; see docs/schema_validation_run_log.md)
+local_schema_validation_repos.txt
+local_schema_validation_run.detail.log
+local_schema_validation_run.detail.*.log
+
 # Mac Os
 .DS_Store
