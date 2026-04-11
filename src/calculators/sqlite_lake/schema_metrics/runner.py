@@ -14,6 +14,7 @@ from src.util.git_util import CommitMessagesBatch, git_log_commit_messages_batch
 from .constants import ALL_METRICS, METRIC_ALL
 from .metrics_active_developers_monthly import validate_active_developers_monthly_for_logs
 from .metrics_active_developers_weekly import validate_active_developers_weekly_for_logs
+from .metrics_author_commit_percentiles import validate_author_commit_percentiles_for_logs
 from .metrics_throughput_per_active_developer_weekly import (
     validate_throughput_per_active_developer_weekly_for_logs,
 )
@@ -106,6 +107,12 @@ def _pipe_cycle_time_delta_events(ctx: _PipelineContext, on_ok_audit: AuditCallb
     )
 
 
+def _pipe_author_commit_percentiles(ctx: _PipelineContext, on_ok_audit: AuditCallback) -> Optional[str]:
+    return validate_author_commit_percentiles_for_logs(
+        ctx.logs, ctx.repo_slug, ctx.conn, on_ok_audit=on_ok_audit
+    )
+
+
 # Order must match ``ALL_METRICS`` in ``constants.py``.
 _PIPELINE: Tuple[MetricPipe, ...] = (
     _pipe_cycle_time_monthly,
@@ -116,6 +123,7 @@ _PIPELINE: Tuple[MetricPipe, ...] = (
     _pipe_active_developers_weekly,
     _pipe_throughput_per_active_developer_monthly,
     _pipe_cycle_time_delta_events,
+    _pipe_author_commit_percentiles,
 )
 assert len(_PIPELINE) == len(ALL_METRICS), "pipeline steps out of sync with ALL_METRICS"
 
