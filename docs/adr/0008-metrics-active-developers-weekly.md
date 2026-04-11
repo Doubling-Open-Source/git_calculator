@@ -16,6 +16,10 @@ Per **ISO week**, legacy [`calculate_active_developers_by_week`](../../src/calcu
 
 Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-minimal-commit-storage-schema.md)).
 
+## Source of truth vs SQL
+
+**Legacy Python** ([`calculate_active_developers_by_week`](../../src/calculators/throughput_calculator.py) and helpers) **is the source of truth**, quirks included. **SQL** DDL and reference `SELECT` are **guidance**; they must be revised to mirror legacy when they drift.
+
 ## Decision
 
 **Table:** [`schema/metrics_active_developers_weekly.sql`](../../schema/metrics_active_developers_weekly.sql)
@@ -28,6 +32,15 @@ Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-min
 | Lineage | `source_commits_schema_version`, `computed_at`, `tenant_id`, `metrics_schema_version`. |
 
 **Materialization:** Prefer reusing the same ISO-week helpers as ADR 0006 (`iso_week_monday_unix` or equivalent) so week boundaries match [`metrics_throughput_per_active_developer_weekly`](../../schema/metrics_throughput_per_active_developer_weekly.sql).
+
+## Implementation (when implemented)
+
+Follow the same pattern as [ADR 0007](0007-metrics-throughput-per-active-developer-monthly.md) and existing `schema_metrics` modules ([`metrics_throughput_per_active_developer_weekly`](../../src/calculators/sqlite_lake/schema_metrics/metrics_throughput_per_active_developer_weekly.py)):
+
+- **Legacy parity:** Materialization `INSERT … SELECT` and `validate_active_developers_weekly_for_logs` must match [`calculate_active_developers_by_week`](../../src/calculators/throughput_calculator.py) (same week buckets as [`extract_commits_and_authors_by_week`](../../src/calculators/throughput_calculator.py), same rolling-window author count), **including legacy quirks**. If tests show SQL and Python differ, fix SQL. Do not introduce a second definition of the metric under another name.
+- **Minimal formatting:** `period_week` in the table should be **`YYYY-Www`** (local ISO week), aligned with SQL `strftime('%G'…'%V'…)` and with any canonical validation rows. If legacy helpers emit labels that differ only by padding, normalize in one place (as monthly metrics normalize `YYYY-M` → `YYYY-MM`).
+- **Wiring:** Add `schema/metrics_active_developers_weekly.sql` reference `SELECT`, [`metrics_active_developers_weekly.py`](../../src/calculators/sqlite_lake/schema_metrics/) validation + optional SQLite UDF registration (reuse ADR 0006’s `iso_week_monday_unix` if identical), register in [`runner.py`](../../src/calculators/sqlite_lake/schema_metrics/runner.py) and [`constants.ALL_METRICS`](../../src/calculators/sqlite_lake/schema_metrics/constants.py), document the header in the SQL file (`IMPLEMENTED` when done).
+- **Tests:** TDD-friendly unit tests on synthetic `commits_export` rows (see [`tests/schema_metrics_fixtures.py`](../../tests/schema_metrics_fixtures.py)); optional run via [`scripts/validate_schema_metrics.py`](../../scripts/validate_schema_metrics.py) on local clones.
 
 ## Personally identifiable information (PII)
 

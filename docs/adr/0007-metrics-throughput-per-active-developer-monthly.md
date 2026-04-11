@@ -12,6 +12,12 @@ Related metrics tables: [`metrics_throughput_monthly`](../../schema/metrics_thro
 
 Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-minimal-commit-storage-schema.md)).
 
+## Source of truth vs SQL
+
+**Legacy Python is the source of truth** — in this case [`calculate_throughput_per_active_developer`](../../src/calculators/throughput_calculator.py) and its helpers, including any **quirks or odd behaviors** (e.g. inclusive bounds, month-key padding in dicts).
+
+The **SQL** (`schema/metrics_*.sql`: DDL plus commented reference `INSERT … SELECT`) is **guidance** for implementers and for interchange shape. When legacy and SQL disagree, **update the SQL** (and validation) to follow legacy — not the other way around unless legacy is intentionally changed in code with tests.
+
 ## Decision
 
 **Table:** [`schema/metrics_throughput_per_active_developer_monthly.sql`](../../schema/metrics_throughput_per_active_developer_monthly.sql)
