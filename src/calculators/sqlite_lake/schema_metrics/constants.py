@@ -15,6 +15,7 @@ METRIC_ACTIVE_DEVELOPERS_WEEKLY = "active_developers_weekly"
 METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_WEEKLY = "throughput_per_active_developer_weekly"
 METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_MONTHLY = "throughput_per_active_developer_monthly"
 METRIC_CYCLE_TIME_DELTA_EVENTS = "cycle_time_delta_events"
+METRIC_AUTHOR_COMMIT_PERCENTILES = "author_commit_percentiles"
 METRIC_ALL = "all"
 
 # Order is fixed: ``runner._PIPELINE`` must stay aligned (see module-level assert there).
@@ -27,4 +28,5 @@ ALL_METRICS: tuple[str, ...] = (
     METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_WEEKLY,
     METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_MONTHLY,
     METRIC_CYCLE_TIME_DELTA_EVENTS,
+    METRIC_AUTHOR_COMMIT_PERCENTILES,
 )
