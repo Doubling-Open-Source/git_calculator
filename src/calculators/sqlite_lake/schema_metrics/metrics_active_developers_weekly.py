@@ -13,7 +13,6 @@ import sqlite3
 from src.calculators.throughput_calculator import calculate_active_developers_by_week
 
 from ._common import bind_materialization_params, extract_sql_fragment, read_schema_sql
-from .metrics_throughput_per_active_developer_weekly import register_iso_week_monday_unix
 
 DEFAULT_WEEKS_BACK = 4
 
@@ -30,7 +29,6 @@ def extract_active_developers_weekly_select() -> str:
 def run_active_developers_weekly_schema_select(
     conn: sqlite3.Connection, repo_slug: str, **kwargs: Any
 ) -> List[Tuple[Any, ...]]:
-    register_iso_week_monday_unix(conn)
     kw = dict(kwargs)
     weeks_back = int(kw.pop("weeks_back", DEFAULT_WEEKS_BACK))
     params: Dict[str, Any] = {

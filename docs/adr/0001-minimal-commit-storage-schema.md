@@ -55,6 +55,8 @@ Branch membership is **not** a single-valued property of a commit: a commit can 
 | `parent_shas` | Space-separated parent SHAs in **Git parent order** (same as `%P` token order); `''` when `parent_count = 0`. |
 | `parent_count` | Count of parents; must equal number of SHAs in `parent_shas`. `> 1` indicates a merge commit. |
 | `committed_at` | Unix seconds; **committer** date, same semantics as **`%ct`**. |
+| `period_week` | ISO week label **`YYYY-Www`** (naive local `datetime.fromtimestamp(committed_at).isocalendar()`), exporter-populated so weekly metrics SQL stays portable (no SQLite `strftime('%G'/'%V')` in materialization). |
+| `week_monday_unix` | Unix seconds for Monday 00:00 local of that ISO week (`fromisocalendar`); same exporter pass as `period_week`. |
 | `log_ordinal` | **Required** for analytics ordering: 0-based index in the exporter’s `git log` iteration order (newest commit first, same as `git_ir`); metric SQL uses `ORDER BY log_ordinal DESC` per author so LAG walks oldest→newest. |
 | `committer_tz_offset` | Optional; string as produced by **`%z`** for that commit’s committer metadata. |
 | `author_ref` | Identity key for analytics; format depends on `pii_protection_profile`. |

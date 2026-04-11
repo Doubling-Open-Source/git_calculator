@@ -10,17 +10,15 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly
     extract_active_developers_weekly_select,
     validate_active_developers_weekly_for_logs,
 )
-from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_weekly import (
-    register_iso_week_monday_unix,
-)
-
 from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs, message_batch_subject_body
 
 
 def test_extract_select_uses_labeled_cte_and_iso_udf():
     q = extract_active_developers_weekly_select()
     assert "WITH labeled AS (" in q
-    assert "iso_week_monday_unix" in q
+    assert "c.period_week" in q
+    assert "c.week_monday_unix" in q
+    assert "MAX(week_monday_unix)" in q
     assert ":repo_slug" in q
     assert ":weeks_back" in q
     assert "COUNT(DISTINCT l.author_ref)" in q
@@ -35,7 +33,6 @@ def test_single_author_two_commits_same_week_matches_legacy():
     ]
     batch = message_batch_subject_body(logs, "s", "")
     conn = fresh_db_with_logs("local:adw", logs, batch)
-    register_iso_week_monday_unix(conn)
     err = validate_active_developers_weekly_for_logs(logs, "local:adw", conn=conn)
     assert err is None, err
 
@@ -56,7 +53,6 @@ def test_validate_fails_when_sql_repo_slug_not_in_commits_export():
     logs = [FakeCommit("w" * 40, t, "z@x")]
     batch = message_batch_subject_body(logs, "s", "")
     conn = fresh_db_with_logs("local:stored", logs, batch)
-    register_iso_week_monday_unix(conn)
     err = validate_active_developers_weekly_for_logs(
         logs, "local:queried", conn=conn
     )

@@ -16,13 +16,13 @@ Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-min
 
 | Column | Role |
 |--------|------|
-| `repo_slug`, `dataset_id`, `period_week`, `weeks_back` | Grain; PK. `period_week` is ISO `YYYY-Www` (local `%G`/`%V`). |
+| `repo_slug`, `dataset_id`, `period_week`, `weeks_back` | Grain; PK. `period_week` is ISO `YYYY-Www` (same label as `commits_export.period_week`, exporter-aligned to legacy `isocalendar`). |
 | `total_commits` | Commits in that ISO week (same count as legacy week bucket). |
 | `active_authors_in_week` | Legacy intersection: authors with a commit this week who also have any commit in `[Monday − weeks_back weeks, next Monday]` (local). |
 | `throughput_per_active_dev` | `total_commits / active_authors_in_week`, or `0` if denominator is `0`. |
 | Lineage | `source_commits_schema_version`, `computed_at`, `tenant_id`, `metrics_schema_version`. |
 
-**Materialization:** The reference `INSERT … SELECT` uses SQLite UDF `iso_week_monday_unix(iso_year, iso_week)` (Monday 00:00 local as unix seconds, matching `datetime.fromisocalendar`). The schema-metrics validation runner registers this UDF before executing the query.
+**Materialization:** The reference `INSERT … SELECT` is portable SQL: it reads `commits_export.period_week` and `commits_export.week_monday_unix` (Monday 00:00 local as unix seconds), populated by the exporter to match legacy `isocalendar` / `fromisocalendar`.
 
 ## Personally identifiable information (PII)
 

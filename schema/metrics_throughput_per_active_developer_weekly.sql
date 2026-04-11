@@ -1,11 +1,9 @@
--- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``); requires UDF ``iso_week_monday_unix``.
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``); portable SQL (no UDFs).
 -- Derived: weekly throughput normalized by “active” authors (legacy throughput_calculator semantics).
 -- Matches ``calculate_throughput_per_active_developer_by_week(logs, weeks_back)``:
 -- per ISO week: total commits, count of this-week authors who also appear in the rolling
 -- window [Monday−weeks_back weeks, next Monday], commits / that count.
--- Materialization requires SQLite function ``iso_week_monday_unix(iso_year, iso_week)`` returning
--- unix seconds for Monday 00:00 local (``datetime.fromisocalendar(y, w, 1)``); the validation
--- runner registers it before executing this SELECT.
+-- Requires ``commits_export.period_week`` and ``commits_export.week_monday_unix`` (populated by the exporter).
 -- ADR: docs/adr/0006-metrics-throughput-per-active-developer-weekly.md
 
 PRAGMA foreign_keys = ON;
@@ -35,8 +33,8 @@ WITH labeled AS (
   SELECT
     c.author_ref,
     c.committed_at,
-    strftime('%G', c.committed_at, 'unixepoch', 'localtime') || '-W' ||
-      printf('%02d', CAST(strftime('%V', c.committed_at, 'unixepoch', 'localtime') AS INT)) AS period_week
+    c.period_week,
+    c.week_monday_unix
   FROM commits_export AS c
   WHERE c.repo_slug = :repo_slug
 ),
@@ -44,8 +42,7 @@ agg AS (
   SELECT
     period_week,
     COUNT(*) AS total_commits,
-    CAST(substr(period_week, 1, 4) AS INTEGER) AS iso_y,
-    CAST(substr(period_week, 7, 2) AS INTEGER) AS iso_w
+    MAX(week_monday_unix) AS week_monday_unix
   FROM labeled
   GROUP BY period_week
 ),
@@ -53,9 +50,7 @@ bounds AS (
   SELECT
     a.period_week,
     a.total_commits,
-    a.iso_y,
-    a.iso_w,
-    iso_week_monday_unix(a.iso_y, a.iso_w) AS week_monday_unix
+    a.week_monday_unix
   FROM agg AS a
 ),
 with_active AS (
