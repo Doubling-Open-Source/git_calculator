@@ -4,7 +4,7 @@
 -- distribution summaries (not raw per-commit cycle time). Intended for charting “how
 -- concentrated commits are across authors” from ``commits_export`` aggregates.
 --
--- Exact columns TBD (e.g. repo snapshot vs monthly rollups). No ADR yet.
+-- Exact columns TBD (e.g. repo snapshot vs monthly rollups).
 
 PRAGMA foreign_keys = ON;
 

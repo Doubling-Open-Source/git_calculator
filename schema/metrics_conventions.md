@@ -1,6 +1,6 @@
 # Derived metrics — shared conventions
 
-Interchange DDL lives under `schema/metrics_*.sql`; each implemented table has an ADR in `docs/adr/0002`–`0006`. **Stub** DDL (no materialization yet) is listed in [README_METRICS_STUBS.md](README_METRICS_STUBS.md).
+Interchange DDL lives under `schema/metrics_*.sql`; each implemented table has an ADR in `docs/adr/0002`–`0006`. **Stub** DDL (no materialization yet) is listed in [README_METRICS_STUBS.md](README_METRICS_STUBS.md), with decisions in `docs/adr/0007`–`0011`.
 
 | Convention | Choice |
 |------------|--------|
