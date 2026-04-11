@@ -34,7 +34,7 @@ Same expectations as [ADR 0007](0007-metrics-throughput-per-active-developer-mon
 
 - **Parity:** Golden or fixture-based tests comparing exported rows (or a canonical serialization) to legacy output for the same `commits_export` + edges; **minimal formatting** only for stable IDs (`branch_line_id`, hex SHAs) and timestamps.
 - **Wiring:** Reference `INSERT … SELECT` in the schema file, `schema_metrics/metrics_cycle_time_by_branches.py`, register in [`runner.py`](../../src/calculators/sqlite_lake/schema_metrics/runner.py) and [`constants.ALL_METRICS`](../../src/calculators/sqlite_lake/schema_metrics/constants.py) when validation is ready; mark SQL `IMPLEMENTED` when materialization and tests land.
-- **SQLite helpers:** If date or graph primitives are awkward in pure SQL, small UDFs (like `month_start_unix` / `iso_week_monday_unix` elsewhere) are acceptable when they mirror `datetime` / local-time semantics from legacy code.
+- **SQLite helpers:** If date or graph primitives are awkward in pure SQL, small UDFs (when unavoidable) are acceptable when they mirror `datetime` / local-time semantics from legacy code. Other metrics prefer portable SQL (e.g. `strftime` / `printf` for month boundaries).
 - **No duplicate semantics:** Avoid a second branch-line implementation in SQL; extend DDL and SQL until it matches legacy.
 
 ## Personally identifiable information (PII)

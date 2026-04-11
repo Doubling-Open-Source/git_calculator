@@ -24,6 +24,8 @@ The **SQL** (`schema/metrics_*.sql`: DDL plus commented reference `INSERT … SE
 
 Materialization and [`validate_throughput_per_active_developer_monthly_for_logs`](../../src/calculators/sqlite_lake/schema_metrics/metrics_throughput_per_active_developer_monthly.py) match legacy numbers. **Formatting only:** `period_month` is `YYYY-MM` in the table and in canonical validation rows; legacy dict keys use unpadded months (`YYYY-M`) — normalized with the same helper as [`metrics_throughput_monthly`](../../src/calculators/sqlite_lake/schema_metrics/metrics_throughput_monthly.py).
 
+**SQL:** Local `month_start` unix seconds use portable `strftime('%s', printf('…'), 'utc')` (see file header), matching `datetime(y, m, 1).timestamp()` without a custom SQLite function.
+
 | Column | Role |
 |--------|------|
 | `repo_slug`, `dataset_id`, `period_month`, `weeks_back` | Grain; PK. |
