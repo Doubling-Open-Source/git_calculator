@@ -313,19 +313,73 @@ class BranchLine:
         )
 
     def _cycle(self):
+        """
+        Calculates the duration (in seconds) of different phases in the branch's lifecycle.
+
+        Returns a tuple of 5 metrics: `(start, ramp, work, close, total)`.
+
+        Phase Definitions:
+        * start: The earliest timestamp across all nodes (merge, commits, departure).
+        * ramp: Duration from the departure node to the first commit.
+        * work: Duration between the first and last commits.
+        * close: Duration from the last commit to the merge node.
+        * total: Duration between the earliest and latest timestamps across all nodes.
+
+        Timeline:
+        TIME ------------------------------------------------------------------------------------------->
+
+        [Departure Node]             [First Commit]               [Last Commit]              [Merge Node]
+               |                            |                           |                          |
+               | <--------- RAMP ---------> | <--------- WORK --------> | <-------- CLOSE -------> |
+               |                            |                           |                          |
+               | <---------------------------------- TOTAL --------------------------------------> |
+
+        Implementation Notes:
+        * Missing Data: Uncalculated or undefined phases return `None`. They are never
+          coerced to `0` to ensure we don't confuse "missing data" with an actual
+          "zero-length" phase.
+        * Explicit Node Resolution: Instead of relying on `__iter__` traversal order, the
+          algorithm explicitly resolves timestamps directly from `self.departure`, `self.commits`,
+          and `self.merge`. If `commits` is empty, `ramp`, `work`, and `close` strictly remain `None`.
+        * Ongoing Work: This method does not fall back to the current wall-clock time
+          if a phase (like merge) is incomplete.
+        """
         start = total = ramp = close = work = None
-        ts = [c._when for c in self]
-        if ts:
-            start = min(ts)
-            if len(ts) > 1:
-                total = max(ts) - min(ts)
-            if self.departure and self.commits:
-                ramp = min(ts[1:-1]) - self.departure._when
-            if self.merge and self.commits:
-                close = self.merge._when - max(ts[1:-1])
-            if self.commits:
-                work = max(ts[1:-1]) - min(ts[1:-1])
-        # print(start, ramp, work, close, total)
+
+        dep_ts = self.departure._when if self.departure else None
+        merge_ts = self.merge._when if self.merge else None
+
+        # Safely extract timestamps, explicitly filtering out leaked boundary nodes
+        commit_ts = []
+        if self.commits:
+            commit_ts = [
+                c._when for c in self.commits
+                if c is not self.departure and c is not self.merge
+            ]
+
+        # Combine all valid timestamps to calculate start and total
+        all_ts = [t for t in commit_ts + [dep_ts, merge_ts] if t is not None]
+
+        if not all_ts:
+            return start, ramp, work, close, total
+
+        start = min(all_ts)
+        if len(all_ts) > 1:
+            total = max(all_ts) - min(all_ts)
+
+        # Calculate ramp, work, and close only if we have pure commits to anchor them
+        if commit_ts:
+            first_c = min(commit_ts)
+            last_c = max(commit_ts)
+
+            if dep_ts is not None:
+                ramp = first_c - dep_ts
+
+            work = last_c - first_c
+
+            if merge_ts is not None:
+                close = merge_ts - last_c
+
         return start, ramp, work, close, total
 
     def cycletime(self, fname=None, bucket_size=None):
