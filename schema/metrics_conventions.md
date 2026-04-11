@@ -2,6 +2,8 @@
 
 Interchange DDL lives under `schema/metrics_*.sql`; each implemented table has an ADR in `docs/adr/0002`–`0007` (and 0001 for commits). **Stub** DDL (no materialization yet) is listed in [README_METRICS_STUBS.md](README_METRICS_STUBS.md), with decisions in `docs/adr/0008`–`0011`.
 
+**Source of truth:** Legacy Python calculators (see `src/calculators/`) are authoritative for metric **definitions and numbers**, including edge cases. SQL files document **shape** and a reference `INSERT … SELECT`; when they diverge from legacy, **update the SQL** (and `schema_metrics` validation) to match — not the other way around unless legacy is deliberately changed with tests. See [ADR 0007 § Source of truth vs SQL](../docs/adr/0007-metrics-throughput-per-active-developer-monthly.md#source-of-truth-vs-sql).
+
 | Convention | Choice |
 |------------|--------|
 | **Versioning** | `dataset_id TEXT NOT NULL` — idempotent batch or export run (UUID, content hash, or pipeline run id). Part of **PRIMARY KEY** with `repo_slug` and the period key (`period_month` or `period_week`). |
