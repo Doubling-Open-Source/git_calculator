@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+import sqlite3
+from typing import Any, Dict, List, Optional
 
 from src.calculators.sqlite_lake.commits_export_populate import (
     CommitMessagesBatch,
@@ -50,3 +51,39 @@ def fresh_db_with_logs(
     conn = create_commits_export_db()
     populate_export(conn, repo_slug, logs, batch)
     return conn
+
+
+def apply_commit_parent_edges(
+    conn: sqlite3.Connection,
+    repo_slug: str,
+    child_to_ordered_parents: Dict[str, List[str]],
+) -> None:
+    """
+    Set ``parent_shas`` / ``parent_count`` on ``commits_export`` and mirror rows in
+    ``commit_parent_edges`` (Git parent order: index 0 = first parent).
+    """
+    cur = conn.cursor()
+    for child, plist in child_to_ordered_parents.items():
+        n = len(plist)
+        ps = " ".join(plist) if plist else ""
+        cur.execute(
+            """
+            UPDATE commits_export
+            SET parent_count = ?, parent_shas = ?
+            WHERE repo_slug = ? AND sha = ?
+            """,
+            (n, ps, repo_slug, child),
+        )
+        cur.execute(
+            "DELETE FROM commit_parent_edges WHERE repo_slug = ? AND child_sha = ?",
+            (repo_slug, child),
+        )
+        for ord_i, p in enumerate(plist):
+            cur.execute(
+                """
+                INSERT INTO commit_parent_edges (repo_slug, child_sha, parent_sha, parent_ord)
+                VALUES (?, ?, ?, ?)
+                """,
+                (repo_slug, child, p, ord_i),
+            )
+    conn.commit()

@@ -8,7 +8,8 @@ Keyword flags follow ADR 0001 (%s / %b) for change-failure schema metrics.
 from __future__ import annotations
 
 import sqlite3
-from typing import Any, List, Optional
+from subprocess import CalledProcessError, run as sp_run
+from typing import Any, Dict, List, Optional
 
 from src.calculators.sqlite_lake.commits_export_keywords import subject_body_keyword_flags
 from src.calculators.sqlite_lake.paths import SCHEMA_DIR
@@ -18,6 +19,9 @@ from src.util.git_util import git_log_commit_messages_batch, git_run
 CommitMessagesBatch = dict[str, tuple[str, str, str]]
 
 _COMMITS_EXPORT_SQL = SCHEMA_DIR / "commits_export.sql"
+
+# ``git rev-list --parents --no-walk`` per chunk (avoids 2×N subprocesses from per-SHA cat-file+log).
+_REV_LIST_PARENTS_CHUNK = 512
 
 
 def commits_export_ddl_script() -> str:
@@ -75,5 +79,122 @@ def populate_commits_export_from_logs(
             """,
             (repo_slug, sha, committed_at, log_ordinal, author_ref, sk, bk),
         )
+    populate_commit_parent_edges_from_git_if_available(conn, repo_slug)
     conn.commit()
     return len(logs)
+
+
+def _apply_parent_edges_for_sha(
+    cur: sqlite3.Cursor,
+    repo_slug: str,
+    sha: str,
+    parents: List[str],
+) -> None:
+    n = len(parents)
+    ps = " ".join(parents)
+    cur.execute(
+        """
+        UPDATE commits_export
+        SET parent_count = ?, parent_shas = ?
+        WHERE repo_slug = ? AND sha = ?
+        """,
+        (n, ps, repo_slug, sha),
+    )
+    cur.execute(
+        "DELETE FROM commit_parent_edges WHERE repo_slug = ? AND child_sha = ?",
+        (repo_slug, sha),
+    )
+    for i, p in enumerate(parents):
+        cur.execute(
+            """
+            INSERT INTO commit_parent_edges (repo_slug, child_sha, parent_sha, parent_ord)
+            VALUES (?, ?, ?, ?)
+            """,
+            (repo_slug, sha, p, i),
+        )
+
+
+def _parents_one_sha_slow_path(sha: str) -> Optional[List[str]]:
+    """Return parent SHAs when ``sha`` exists in the repo as a commit; else None."""
+    try:
+        git_run("cat-file", "-e", sha + "^{commit}")
+    except CalledProcessError:
+        return None
+    parents_s = git_run("log", "-1", "--format=%P", "--no-patch", sha).stdout.strip()
+    return parents_s.split() if parents_s else []
+
+
+def _parents_map_from_rev_list_batch(shas: List[str]) -> Optional[Dict[str, List[str]]]:
+    """
+    One ``git rev-list --parents --no-walk`` for many SHAs.
+    Returns None if git failed (e.g. unknown object mixed into the batch).
+    """
+    if not shas:
+        return {}
+    cmd = ["git", "rev-list", "--parents", "--no-walk", *shas]
+    proc = sp_run(cmd, text=True, capture_output=True)
+    if proc.returncode != 0:
+        return None
+    out: Dict[str, List[str]] = {}
+    for line in proc.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        parts = line.split()
+        if not parts:
+            continue
+        commit = parts[0]
+        out[commit] = parts[1:]
+    return out
+
+
+def _populate_parent_edges_chunk(
+    cur: sqlite3.Cursor,
+    repo_slug: str,
+    shas: List[str],
+) -> None:
+    """Fill parent edges for ``shas`` using a batched rev-list when possible."""
+    if not shas:
+        return
+    attempted = _parents_map_from_rev_list_batch(shas)
+    if attempted is not None:
+        for sha in shas:
+            if sha in attempted:
+                _apply_parent_edges_for_sha(cur, repo_slug, sha, attempted[sha])
+        for sha in shas:
+            if sha not in attempted:
+                parents = _parents_one_sha_slow_path(sha)
+                if parents is not None:
+                    _apply_parent_edges_for_sha(cur, repo_slug, sha, parents)
+        return
+
+    if len(shas) == 1:
+        parents = _parents_one_sha_slow_path(shas[0])
+        if parents is not None:
+            _apply_parent_edges_for_sha(cur, repo_slug, shas[0], parents)
+        return
+
+    mid = len(shas) // 2
+    _populate_parent_edges_chunk(cur, repo_slug, shas[:mid])
+    _populate_parent_edges_chunk(cur, repo_slug, shas[mid:])
+
+
+def populate_commit_parent_edges_from_git_if_available(
+    conn: sqlite3.Connection, repo_slug: str
+) -> None:
+    """
+    When each export SHA exists as a commit object in the current Git repo, set
+    ``parent_shas`` / ``parent_count`` and mirror ``commit_parent_edges``. No-op for
+    synthetic SHAs (e.g. unit-test fixtures).
+
+    Uses batched ``git rev-list --parents --no-walk`` (~N/512 subprocesses) with
+    recursive fallback to the legacy per-SHA path when a batch fails.
+    """
+    cur = conn.cursor()
+    rows = cur.execute(
+        "SELECT sha FROM commits_export WHERE repo_slug = ?", (repo_slug,)
+    ).fetchall()
+    all_shas = [r[0] for r in rows]
+    for i in range(0, len(all_shas), _REV_LIST_PARENTS_CHUNK):
+        chunk = all_shas[i : i + _REV_LIST_PARENTS_CHUNK]
+        _populate_parent_edges_chunk(cur, repo_slug, chunk)
