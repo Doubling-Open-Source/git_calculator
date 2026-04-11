@@ -9,7 +9,6 @@ canonical rows (same calendar month as legacy keys ``YYYY-M`` from ``extract_com
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Callable, List, Optional, Sequence, Tuple
 
 import sqlite3
@@ -21,16 +20,6 @@ from .metrics_throughput_monthly import _normalize_legacy_month_key
 
 DEFAULT_WEEKS_BACK = 4
 THROUGHPUT_TOL = 1e-9
-
-
-def register_month_start_unix(conn: sqlite3.Connection) -> None:
-    """SQLite UDF: first moment of calendar month in local time, unix seconds."""
-
-    def month_start_unix(iso_year: float, iso_month: float) -> int:
-        y, m = int(iso_year), int(iso_month)
-        return int(datetime(y, m, 1).timestamp())
-
-    conn.create_function("month_start_unix", 2, month_start_unix)
 
 
 def extract_throughput_per_active_developer_monthly_select() -> str:
@@ -45,7 +34,6 @@ def extract_throughput_per_active_developer_monthly_select() -> str:
 def run_throughput_per_active_developer_monthly_schema_select(
     conn: sqlite3.Connection, repo_slug: str, **kwargs: Any
 ) -> List[Tuple[Any, ...]]:
-    register_month_start_unix(conn)
     kw = dict(kwargs)
     weeks_back = int(kw.pop("weeks_back", DEFAULT_WEEKS_BACK))
     params: dict[str, Any] = {

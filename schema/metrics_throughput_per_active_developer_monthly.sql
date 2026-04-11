@@ -1,12 +1,12 @@
--- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``); requires UDF ``month_start_unix``.
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``); portable SQL (no UDFs).
 -- Matches ``throughput_calculator.calculate_throughput_per_active_developer(logs, weeks_back)``.
 -- Month bucket: same calendar month as ``extract_commits_and_authors``; ``period_month`` is ``YYYY-MM``
 -- (minimal formatting vs legacy unpadded month keys).
 -- Activity scan: ``cutoff <= committed_at <= month_start`` with ``month_start`` = first day 00:00 local
 -- (same as legacy ``datetime(y,m,1)`` vs ``commit_date``).
 -- ``active_authors_in_month`` = month authors ∩ authors with ≥1 commit in that window; throughput = commits / count.
--- Materialization requires SQLite function ``month_start_unix(year, month)`` returning unix seconds
--- for local ``datetime(year, month, 1)``; the validation runner registers it before executing this SELECT.
+-- Month start as unix: ``CAST(strftime('%s', printf('%04d-%02d-01 00:00:00', y, m), 'utc') AS INTEGER)``
+-- mirrors Python ``int(datetime(y, m, 1).timestamp())`` (SQLite ``'utc'`` modifier: timestring is local wall time).
 -- ADR: docs/adr/0007-metrics-throughput-per-active-developer-monthly.md
 
 PRAGMA foreign_keys = ON;
@@ -55,7 +55,13 @@ bounds AS (
     a.total_commits,
     a.y,
     a.m,
-    month_start_unix(CAST(a.y AS REAL), CAST(a.m AS REAL)) AS month_start_unix
+    CAST(
+      strftime(
+        '%s',
+        printf('%04d-%02d-01 00:00:00', CAST(a.y AS INTEGER), CAST(a.m AS INTEGER)),
+        'utc'
+      ) AS INTEGER
+    ) AS month_start_unix
   FROM agg AS a
 ),
 with_active AS (

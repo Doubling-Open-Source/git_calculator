@@ -11,16 +11,16 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_de
     CanonicalThroughputPerActiveDeveloperMonthly,
     compare_throughput_per_active_developer_monthly,
     extract_throughput_per_active_developer_monthly_select,
-    register_month_start_unix,
     validate_throughput_per_active_developer_monthly_for_logs,
 )
 
 from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs, message_batch_subject_body
 
 
-def test_extract_select_uses_labeled_cte_and_month_udf():
+def test_extract_select_uses_labeled_cte_and_portable_month_start():
     q = extract_throughput_per_active_developer_monthly_select()
     assert "WITH labeled AS (" in q
+    assert "strftime" in q and "printf" in q and "'utc'" in q
     assert "month_start_unix" in q
     assert ":repo_slug" in q
     assert ":weeks_back" in q
@@ -36,7 +36,6 @@ def test_pre_month_activity_intersection_matches_canonical():
     ]
     batch = message_batch_subject_body(logs, "s", "")
     conn = fresh_db_with_logs("local:tpadm", logs, batch)
-    register_month_start_unix(conn)
     err = validate_throughput_per_active_developer_monthly_for_logs(
         logs, "local:tpadm", conn=conn, weeks_back=4
     )
@@ -49,7 +48,6 @@ def test_june_only_commit_zero_denominator_when_no_pre_month_activity():
     logs = [FakeCommit("a" * 40, june, "solo@x")]
     batch = message_batch_subject_body(logs, "s", "")
     conn = fresh_db_with_logs("local:tpadm2", logs, batch)
-    register_month_start_unix(conn)
     err = validate_throughput_per_active_developer_monthly_for_logs(
         logs, "local:tpadm2", conn=conn, weeks_back=4
     )
@@ -68,7 +66,6 @@ def test_validate_fails_when_sql_repo_slug_not_in_commits_export():
     logs = [FakeCommit("w" * 40, t, "z@x")]
     batch = message_batch_subject_body(logs, "s", "")
     conn = fresh_db_with_logs("local:stored", logs, batch)
-    register_month_start_unix(conn)
     err = validate_throughput_per_active_developer_monthly_for_logs(
         logs, "local:queried", conn=conn
     )
