@@ -6,7 +6,7 @@ Not yet approved.
 
 ## Context
 
-Cycle-time charts need **monthly aggregates** of inter-commit gaps (minutes), matching the semantics of [`sqlite_lake` `query_by_month_stats_pure_sql`](../../src/calculators/sqlite_lake/cycle_time_by_commits_calculator.py): `LAG` partitioned by **author**, ordered by **`committed_at`**, `sha`; then all non-null deltas pooled and grouped by **calendar month of the child commit** (`strftime` localtime).
+Cycle-time charts need **monthly aggregates** of inter-commit gaps (minutes). Source query: `LAG` on [`commits_export`](../../schema/commits_export.sql) partitioned by **`author_ref`**, ordered by **`log_ordinal DESC`** (chronological oldest→newest within author, matching Python `calculate_time_deltas`); then non-null deltas grouped by **calendar month of the child commit** (`strftime` localtime). The lake `commits` path still uses `ORDER BY committed_date, sha` until a sequence column exists there.
 
 ## Decision
 

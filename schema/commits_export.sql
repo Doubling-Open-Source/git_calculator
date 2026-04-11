@@ -7,6 +7,8 @@
 -- parent_shas: space-separated full SHAs, Git order; '' when parent_count = 0.
 -- conventional_type_scope: where/how conventional_type was derived (see ADR); NULL iff conventional_type IS NULL.
 -- pii_protection_profile: caller-chosen tier (none → advanced); see ADR — dictates how author_ref / author_label_pii are populated.
+-- log_ordinal: 0-based index in git_log() iteration order (same as git_ir: newest commit first).
+-- Metric SQL uses PARTITION BY author_ref ORDER BY log_ordinal DESC so LAG walks oldest→newest (positive minutes).
 
 PRAGMA foreign_keys = ON;
 
@@ -16,6 +18,7 @@ CREATE TABLE IF NOT EXISTS commits_export (
     parent_shas TEXT NOT NULL,
     parent_count INTEGER NOT NULL CHECK (parent_count >= 0),
     committed_at INTEGER NOT NULL,
+    log_ordinal INTEGER NOT NULL,
     committer_tz_offset TEXT,
     pii_protection_profile TEXT NOT NULL CHECK (pii_protection_profile IN (
         'none',
@@ -44,6 +47,9 @@ CREATE TABLE IF NOT EXISTS commits_export (
 
 CREATE INDEX IF NOT EXISTS idx_commits_export_repo_time
     ON commits_export (repo_slug, committed_at);
+
+CREATE INDEX IF NOT EXISTS idx_commits_export_repo_log_ord
+    ON commits_export (repo_slug, log_ordinal);
 
 CREATE INDEX IF NOT EXISTS idx_commits_export_repo_author
     ON commits_export (repo_slug, author_ref);

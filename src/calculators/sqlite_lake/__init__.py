@@ -29,7 +29,6 @@ class SqliteLake:
     """
 
     def __init__(self, path: Optional[str] = None):
-        self._path = path
         self.conn: sqlite3.Connection = schema.create_db(path)
 
     def close(self) -> None:

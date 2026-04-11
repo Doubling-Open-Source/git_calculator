@@ -1,3 +1,4 @@
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
 -- Derived: one row per non-null inter-commit gap (minutes) per author_ref.
 -- ADR: docs/adr/0004-metrics-cycle-time-delta-events.md
 
@@ -45,10 +46,16 @@ FROM (
     author_ref,
     committed_at,
     sha AS child_sha,
-    ROUND((committed_at - LAG(committed_at) OVER (
-      PARTITION BY author_ref ORDER BY committed_at, sha
-    )) / 60.0, 2) AS cycle_minutes,
-    LAG(sha) OVER (PARTITION BY author_ref ORDER BY committed_at, sha) AS prev_sha
+    ROUND((
+      julianday(datetime(committed_at, 'unixepoch', 'localtime'))
+      - julianday(datetime(
+          LAG(committed_at) OVER (
+            PARTITION BY author_ref ORDER BY log_ordinal DESC
+          ),
+          'unixepoch', 'localtime'
+        ))
+    ) * 24 * 60, 2) AS cycle_minutes,
+    LAG(sha) OVER (PARTITION BY author_ref ORDER BY log_ordinal DESC) AS prev_sha
   FROM commits_export
   WHERE repo_slug = :repo_slug
 ) AS d

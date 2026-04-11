@@ -3,12 +3,14 @@ SQLite cycle-time queries mirroring cycle_time_by_commits_calculator.
 Pure SQL (no numpy/Python for aggregates). Same return shapes for parity tests.
 See docs/lake_schema_for_sqlite.md.
 
-Python vs SQL differences (docs/cycle_time_python_vs_sql_differences.md):
-- Ordering: Python uses git log order; SQL uses ORDER BY committed_date, sha.
-  When multiple commits share the same committed_date per author, pairing can differ
-  (e.g. 60-min delta swap) and cascade to fixed-bucket and by-month stats.
-- By-month: timestamp boundary / TZ can shift a delta between months (Python vs SQL).
-- Float rounding: minor differences in intermediate values may appear.
+This module queries the lake `commits` table (no log sequence column). Window ordering
+remains ORDER BY committed_date, sha. Schema validation uses commits_export + log_ordinal
+(see schema/metrics_cycle_time_monthly.sql) to match Python git_log order.
+
+Remaining Python vs SQL gaps (docs/cycle_time_python_vs_sql_differences.md):
+- Lake path: duplicate committed_date per author can still differ from git log order.
+- By-month: TZ boundaries (localtime vs fromtimestamp).
+- Float rounding in aggregates.
 """
 
 import sqlite3
@@ -19,8 +21,8 @@ def _deltas_cte() -> str:
     """
     SQL for cycle-time deltas between consecutive commits per author.
     LAG() gives previous commit timestamp; diff / 60 = minutes. First row per author has NULL.
-    Tie-break: ORDER BY committed_date, sha (Option B) for stable SQL; Python uses git log order.
-    DIFF: When duplicate (author_email, committed_date) exist, pairing can differ (SQL by sha vs Python by log).
+    Tie-break: ORDER BY committed_date, sha (lake has no log ordinal). Validation metrics SQL
+    uses commits_export.log_ordinal instead; see schema/metrics_cycle_time_monthly.sql.
     """
     return """
 WITH ordered AS (
@@ -43,12 +45,6 @@ def query_deltas(conn: sqlite3.Connection, repo_id: str) -> List[Tuple[int, floa
     cur = conn.execute(_deltas_cte().strip(), (repo_id,))
     rows = cur.fetchall()
     return [(r[0], round(r[1], 2)) for r in rows]
-
-
-def query_deltas_raw(conn: sqlite3.Connection, repo_id: str) -> List[Tuple[int, float]]:
-    """Same as query_deltas but return raw rows for debugging (no rounding)."""
-    cur = conn.execute(_deltas_cte().strip(), (repo_id,))
-    return [(r[0], r[1]) for r in cur.fetchall()]
 
 
 def _sql_fixed_bucket_stats(bucket_size: int) -> str:

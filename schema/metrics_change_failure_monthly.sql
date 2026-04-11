@@ -1,3 +1,4 @@
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
 -- Derived: monthly change-failure-style rate from commits_export keyword flags.
 -- ADR: docs/adr/0002-metrics-change-failure-monthly.md
 -- Fix-like: (subject_has_keywords OR body_has_keywords) = 1 (not full-message LIKE).

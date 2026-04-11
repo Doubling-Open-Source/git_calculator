@@ -24,7 +24,7 @@ Some analyses need **event-level** cycle times (each gap between consecutive com
 
 **Primary key:** `(repo_slug, dataset_id, author_ref, committed_at, child_sha)`.
 
-**Ordering:** `PARTITION BY author_ref ORDER BY committed_at, sha` — matches [`cycle_time_by_commits_calculator.py`](../../src/calculators/sqlite_lake/cycle_time_by_commits_calculator.py) SQL pattern.
+**Ordering:** `PARTITION BY author_ref ORDER BY log_ordinal DESC` on [`commits_export`](../../schema/commits_export.sql) — `log_ordinal` follows git_log (newest-first); DESC makes LAG walk oldest→newest like Python’s positive deltas. The lake `commits` SQL path remains `ORDER BY committed_date, sha` until a sequence column exists there.
 
 ## Personally identifiable information (PII) (**medium sensitivity**)
 
