@@ -1,0 +1,9 @@
+# Copy to ../local_schema_validation_repos.txt (gitignored). One git repository root per line.
+# Lines starting with # are ignored. Absolute paths, ~/…, or paths relative to this file’s directory.
+#
+# Example (replace with your machine-local directories):
+# /path/to/repo1
+# /path/to/repo2
+#
+# Then from git_calculator root:
+#   ./scripts/validate_schema_metrics.py

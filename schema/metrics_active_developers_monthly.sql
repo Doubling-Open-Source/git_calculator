@@ -1,15 +1,14 @@
 -- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
--- Derived: monthly commit volume and distinct author_ref count.
--- ADR: docs/adr/0005-metrics-throughput-monthly.md
+-- Derived: distinct author_ref count per calendar month (local wall time).
+-- Parity: active_developers_calculator.extract_authors + monthly_author_statistics.
 
 PRAGMA foreign_keys = ON;
 
-CREATE TABLE IF NOT EXISTS metrics_throughput_monthly (
+CREATE TABLE IF NOT EXISTS metrics_active_developers_monthly (
     repo_slug TEXT NOT NULL,
     dataset_id TEXT NOT NULL,
     period_month TEXT NOT NULL,
-    commit_count INTEGER NOT NULL,
-    distinct_author_count INTEGER NOT NULL,
+    unique_author_count INTEGER NOT NULL,
     source_commits_schema_version INTEGER,
     computed_at INTEGER NOT NULL,
     tenant_id TEXT,
@@ -17,22 +16,21 @@ CREATE TABLE IF NOT EXISTS metrics_throughput_monthly (
     PRIMARY KEY (repo_slug, dataset_id, period_month)
 );
 
-CREATE INDEX IF NOT EXISTS idx_metrics_thr_repo_dataset
-    ON metrics_throughput_monthly (repo_slug, dataset_id);
+CREATE INDEX IF NOT EXISTS idx_metrics_adm_repo_dataset
+    ON metrics_active_developers_monthly (repo_slug, dataset_id);
 
 /*
  * Reference: materialization (bind :repo_slug, :dataset_id, :computed_at, etc.)
  * ---------------------------------------------------------------------------
-INSERT INTO metrics_throughput_monthly (
-  repo_slug, dataset_id, period_month, commit_count, distinct_author_count,
+INSERT INTO metrics_active_developers_monthly (
+  repo_slug, dataset_id, period_month, unique_author_count,
   source_commits_schema_version, computed_at, tenant_id
 )
 SELECT
   :repo_slug,
   :dataset_id,
   m.period_month,
-  COUNT(*) AS commit_count,
-  COUNT(DISTINCT m.author_ref) AS distinct_author_count,
+  COUNT(DISTINCT m.author_ref) AS unique_author_count,
   :source_commits_schema_version,
   :computed_at,
   :tenant_id

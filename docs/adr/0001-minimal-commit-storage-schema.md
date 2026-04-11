@@ -55,6 +55,7 @@ Branch membership is **not** a single-valued property of a commit: a commit can 
 | `parent_shas` | Space-separated parent SHAs in **Git parent order** (same as `%P` token order); `''` when `parent_count = 0`. |
 | `parent_count` | Count of parents; must equal number of SHAs in `parent_shas`. `> 1` indicates a merge commit. |
 | `committed_at` | Unix seconds; **committer** date, same semantics as **`%ct`**. |
+| `log_ordinal` | **Required** for analytics ordering: 0-based index in the exporter’s `git log` iteration order (newest commit first, same as `git_ir`); metric SQL uses `ORDER BY log_ordinal DESC` per author so LAG walks oldest→newest. |
 | `committer_tz_offset` | Optional; string as produced by **`%z`** for that commit’s committer metadata. |
 | `author_ref` | Identity key for analytics; format depends on `pii_protection_profile`. |
 | `author_label_pii` | Optional display label; quasi-PII; must be NULL under `pseudonym_hmac_strict`. |
@@ -69,7 +70,7 @@ Branch membership is **not** a single-valued property of a commit: a commit can 
 
 **Row invariant:** `conventional_type` and `conventional_type_scope` are both NULL or both non-NULL.
 
-**Indexes:** `(repo_slug, committed_at)`, `(repo_slug, author_ref)`, `(repo_slug, parent_count)`.
+**Indexes:** `(repo_slug, committed_at)`, `(repo_slug, log_ordinal)`, `(repo_slug, author_ref)`, `(repo_slug, parent_count)`.
 
 ### Table `commit_parent_edges`
 
@@ -148,7 +149,7 @@ HMAC-based **`author_ref`** removes **direct** email from a table but does **not
 
 The “30” threshold is **pedagogical** for classical stats, not a privacy certificate. Strong guarantees often require **much larger effective \(N\)**, **suppression / aggregation**, or **differential privacy** (and policy), not pseudonymization alone.
 
-Downstream: [ADR 0006](0006-metrics-author-commit-weekly.md) (per-author weekly metrics) and any public dashboard using **`author_ref`** at fine grain should assume **re-identification risk** unless k-anonymity or SDC rules are applied.
+Downstream: [ADR 0006](0006-metrics-throughput-per-active-developer-weekly.md) (weekly throughput per active developer, repo-level aggregates). Tables that expose **`author_ref`** at fine grain still assume **re-identification risk** unless k-anonymity or SDC rules are applied.
 
 ### Table `refs_export` (optional)
 

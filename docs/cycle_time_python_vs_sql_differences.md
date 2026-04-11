@@ -2,6 +2,12 @@
 
 When comparing Python (`cycle_time_by_commits_calculator`) and SQL (`sqlite_lake`) on real repos (e.g. ***REMOVED***), **diffs appear in deltas, fixed-bucket stats, and by-month stats**. This doc explains why and what we can do **without changing the DevLake/lake table schema** (no new columns).
 
+### Schema validation (`commits_export` + `schema/metrics_cycle_time_*.sql`)
+
+The in-repo **metrics** SQL validated by `scripts/validate_schema_metrics.py` uses table `commits_export` with column **`log_ordinal`** (git_log iteration order, newest-first index). LAG windows use `PARTITION BY author_ref ORDER BY log_ordinal DESC` so the window walks oldest→newest and matches Python `calculate_time_deltas` for the same export.
+
+The **lake** `commits` table (this doc’s historical focus) still has **no** log-sequence column; `sqlite_lake/cycle_time_by_commits_calculator.py` keeps `ORDER BY committed_date, sha` until the lake schema can add an equivalent.
+
 ---
 
 ## 1. Root causes

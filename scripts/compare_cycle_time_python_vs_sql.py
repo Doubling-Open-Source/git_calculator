@@ -25,11 +25,13 @@ import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 
-# Run from repo root so src is importable
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
+# Run from repo root so src is importable (this script lives in scripts/)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+_repo_root_str = str(REPO_ROOT)
+if _repo_root_str not in sys.path:
+    sys.path.insert(0, _repo_root_str)
 
 import pandas as pd
 from src.git_ir import git_log
@@ -50,7 +52,7 @@ def run_toy_repo():
     import tempfile
     from src.util.toy_repo import ToyRepoCreator
 
-    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=REPO_ROOT)
+    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=_repo_root_str)
     orig_cwd = os.getcwd()
     try:
         os.chdir(tmp)
@@ -93,7 +95,7 @@ def main():
     out_dir = (
         os.path.abspath(args.out_dir)
         if os.path.isabs(args.out_dir)
-        else os.path.join(REPO_ROOT, args.out_dir)
+        else str(REPO_ROOT / args.out_dir)
     )
     os.makedirs(out_dir, exist_ok=True)
 

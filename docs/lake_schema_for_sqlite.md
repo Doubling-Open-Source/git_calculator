@@ -1,6 +1,6 @@
 # SQLite schema for cycle-time (lake-compatible)
 
-This doc defines the minimal SQLite schema used in git_calculator to mirror the DevLake lake for cycle-time validation. Full lake details: [lake_schema_gitextractor_refdiff.md](../lake_schema_gitextractor_refdiff.md).
+This doc defines the minimal SQLite schema used in git_calculator to mirror the DevLake lake for cycle-time validation. Full lake details: [lake_schema_gitextractor_refdiff.md](../lake_schema_gitextractor_refdiff.md). For **chart-ready aggregates** over the privacy-aware interchange, see `schema/metrics_*.sql` and `docs/adr/0002`–`0006`.
 
 ## Minimal tables
 

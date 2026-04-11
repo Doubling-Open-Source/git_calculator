@@ -1,5 +1,9 @@
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
 -- Derived: monthly cycle-time statistics over per-author LAG deltas (minutes).
--- Aligns with sqlite_lake _sql_by_month_stats (partition by author, order by time, sha).
+-- LAG order: commits_export.log_ordinal (git_log iteration order).
+-- cycle_minutes: matches cycle_time_by_commits_calculator.calculate_time_deltas — naive local
+-- datetimes from unix epochs, so wall‑clock timedelta (not raw (Δunix)/60 across DST jumps).
+-- Use julianday(datetime(...,'localtime')) difference × 24×60; see metrics_cycle_time_monthly.py.
 -- ADR: docs/adr/0003-metrics-cycle-time-monthly.md
 
 PRAGMA foreign_keys = ON;
@@ -28,15 +32,21 @@ CREATE INDEX IF NOT EXISTS idx_metrics_ctm_repo_dataset
  * Wrap final SELECT as INSERT INTO metrics_cycle_time_monthly (...) SELECT ...
  * ---------------------------------------------------------------------------
 WITH ordered AS (
-  SELECT sha, author_ref, committed_at
+  SELECT sha, author_ref, committed_at, log_ordinal
   FROM commits_export
   WHERE repo_slug = :repo_slug
 ),
 deltas AS (
   SELECT committed_at,
-    ROUND((committed_at - LAG(committed_at) OVER (
-      PARTITION BY author_ref ORDER BY committed_at, sha
-    )) / 60.0, 2) AS cycle_minutes
+    ROUND((
+      julianday(datetime(committed_at, 'unixepoch', 'localtime'))
+      - julianday(datetime(
+          LAG(committed_at) OVER (
+            PARTITION BY author_ref ORDER BY log_ordinal DESC
+          ),
+          'unixepoch', 'localtime'
+        ))
+    ) * 24 * 60, 2) AS cycle_minutes
   FROM ordered
 ),
 valid AS (
@@ -68,7 +78,12 @@ p75_vals AS (
   SELECT b.month_year,
     MAX(CASE WHEN r.rn = b.k_lo THEN r.cycle_minutes END) AS v_lo,
     MAX(CASE WHEN r.rn = b.k_lo + 1 THEN r.cycle_minutes END) AS v_hi,
-    b.frac
+    b.frac,
+    (1.0 - b.frac) * MAX(CASE WHEN r.rn = b.k_lo THEN r.cycle_minutes END)
+      + b.frac * COALESCE(
+        MAX(CASE WHEN r.rn = b.k_lo + 1 THEN r.cycle_minutes END),
+        MAX(CASE WHEN r.rn = b.k_lo THEN r.cycle_minutes END)
+      ) AS p75_linear
   FROM bucket_meta b
   LEFT JOIN ranked r ON r.month_year = b.month_year AND r.rn IN (b.k_lo, b.k_lo + 1)
   GROUP BY b.month_year, b.frac
@@ -80,7 +95,15 @@ SELECT
   b.n AS sample_count,
   b.s AS sum_cycle_minutes,
   ROUND(b.s / b.n, 2) AS avg_cycle_minutes,
-  CAST(ROUND((1.0 - p.frac) * p.v_lo + p.frac * COALESCE(p.v_hi, p.v_lo), 0) AS INT) AS p75_cycle_minutes,
+  /* int(round(x,0)) in Python is half-to-even; SQLite ROUND() is half-away-from-zero */
+  CAST(
+    CASE
+      WHEN p.p75_linear - CAST(p.p75_linear AS INT) < 0.5 THEN CAST(p.p75_linear AS INT)
+      WHEN p.p75_linear - CAST(p.p75_linear AS INT) > 0.5 THEN CAST(p.p75_linear AS INT) + 1
+      ELSE CASE WHEN CAST(p.p75_linear AS INT) % 2 = 0 THEN CAST(p.p75_linear AS INT)
+           ELSE CAST(p.p75_linear AS INT) + 1 END
+    END AS INT
+  ) AS p75_cycle_minutes,
   CAST(ROUND(SQRT(MAX(0, (b.s2 - b.s * b.s * 1.0 / b.n) / (b.n - 1))), 0) AS INT) AS std_cycle_minutes,
   :source_commits_schema_version,
   :computed_at,
