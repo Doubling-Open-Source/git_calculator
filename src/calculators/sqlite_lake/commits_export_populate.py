@@ -8,8 +8,9 @@ Keyword flags follow ADR 0001 (%s / %b) for change-failure schema metrics.
 from __future__ import annotations
 
 import sqlite3
+from datetime import datetime
 from subprocess import CalledProcessError, run as sp_run
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.calculators.sqlite_lake.commits_export_keywords import subject_body_keyword_flags
 from src.calculators.sqlite_lake.paths import SCHEMA_DIR
@@ -22,6 +23,15 @@ _COMMITS_EXPORT_SQL = SCHEMA_DIR / "commits_export.sql"
 
 # ``git rev-list --parents --no-walk`` per chunk (avoids 2×N subprocesses from per-SHA cat-file+log).
 _REV_LIST_PARENTS_CHUNK = 512
+
+
+def period_week_and_monday_unix(committed_at: int) -> Tuple[str, int]:
+    """ISO week label and Monday 00:00 local (unix), matching weekly legacy calculators."""
+    dt = datetime.fromtimestamp(int(committed_at))
+    iso_y, iso_w, _ = dt.isocalendar()
+    period_week = f"{iso_y}-W{iso_w:02d}"
+    monday_unix = int(datetime.fromisocalendar(iso_y, iso_w, 1).timestamp())
+    return period_week, monday_unix
 
 
 def commits_export_ddl_script() -> str:
@@ -67,17 +77,29 @@ def populate_commits_export_from_logs(
         else:
             subj, body = _git_subject_body(c)
         sk, bk = subject_body_keyword_flags(subj, body)
+        period_week, week_monday_unix = period_week_and_monday_unix(committed_at)
         cur.execute(
             """
             INSERT OR REPLACE INTO commits_export (
-                repo_slug, sha, parent_shas, parent_count, committed_at, log_ordinal,
+                repo_slug, sha, parent_shas, parent_count, committed_at,
+                period_week, week_monday_unix, log_ordinal,
                 committer_tz_offset, pii_protection_profile, author_ref, author_label_pii,
                 subject_has_keywords, body_has_keywords,
                 conventional_type, conventional_type_scope,
                 schema_version, tenant_id
-            ) VALUES (?, ?, '', 0, ?, ?, NULL, 'none', ?, NULL, ?, ?, NULL, NULL, 1, NULL)
+            ) VALUES (?, ?, '', 0, ?, ?, ?, ?, NULL, 'none', ?, NULL, ?, ?, NULL, NULL, 2, NULL)
             """,
-            (repo_slug, sha, committed_at, log_ordinal, author_ref, sk, bk),
+            (
+                repo_slug,
+                sha,
+                committed_at,
+                period_week,
+                week_monday_unix,
+                log_ordinal,
+                author_ref,
+                sk,
+                bk,
+            ),
         )
     populate_commit_parent_edges_from_git_if_available(conn, repo_slug)
     conn.commit()

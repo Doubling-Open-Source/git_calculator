@@ -6,7 +6,6 @@ Parity: schema/metrics_throughput_per_active_developer_weekly.sql vs
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import sqlite3
@@ -21,16 +20,6 @@ DEFAULT_WEEKS_BACK = 4
 THROUGHPUT_TOL = 1e-9
 
 
-def register_iso_week_monday_unix(conn: sqlite3.Connection) -> None:
-    """SQLite UDF used by the materialization SELECT (Monday 00:00 local, unix seconds)."""
-
-    def iso_week_monday_unix(iso_year: float, iso_week: float) -> int:
-        y, w = int(iso_year), int(iso_week)
-        return int(datetime.fromisocalendar(y, w, 1).timestamp())
-
-    conn.create_function("iso_week_monday_unix", 2, iso_week_monday_unix)
-
-
 def extract_throughput_per_active_developer_weekly_select() -> str:
     t = read_schema_sql("metrics_throughput_per_active_developer_weekly.sql")
     return extract_sql_fragment(
@@ -43,7 +32,6 @@ def extract_throughput_per_active_developer_weekly_select() -> str:
 def run_throughput_per_active_developer_weekly_schema_select(
     conn: sqlite3.Connection, repo_slug: str, **kwargs: Any
 ) -> List[Tuple[Any, ...]]:
-    register_iso_week_monday_unix(conn)
     kw = dict(kwargs)
     weeks_back = int(kw.pop("weeks_back", DEFAULT_WEEKS_BACK))
     params: Dict[str, Any] = {
