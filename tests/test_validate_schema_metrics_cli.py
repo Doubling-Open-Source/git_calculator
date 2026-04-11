@@ -50,3 +50,43 @@ def test_cli_main_returns_one_when_validator_reports_error(temp_directory):
     finally:
         sys.argv = orig_argv
         os.chdir(orig_cwd)
+
+
+def test_cli_multi_repo_aggregate_passes_multiple_repo_dir_flags(temp_directory):
+    """``--repo-dir`` may be repeated; paths are forwarded in order to the aggregate validator."""
+    repo_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    os.chdir(repo_root)
+    d1 = tempfile.mkdtemp(prefix="cli_mra_1_", dir=temp_directory)
+    d2 = tempfile.mkdtemp(prefix="cli_mra_2_", dir=temp_directory)
+    script = os.path.join(repo_root, "scripts", "validate_schema_metrics.py")
+    orig_cwd = os.getcwd()
+    orig_argv = sys.argv[:]
+    try:
+        os.chdir(repo_root)
+        sys.argv = [
+            "validate_schema_metrics.py",
+            "--quiet",
+            "--no-detail-log",
+            "--metric",
+            "multi_repo_aggregate",
+            "--repo-dir",
+            d1,
+            "--repo-dir",
+            d2,
+        ]
+        with mock.patch(
+            "src.calculators.sqlite_lake.schema_metrics.validate_multi_repo_aggregate_for_local_repo_paths",
+            return_value=(None, 0.0, 0.0, 0),
+        ) as m:
+            spec = importlib.util.spec_from_file_location(
+                "validate_schema_metrics_cli_multi", script
+            )
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            assert mod.main() == 0
+        m.assert_called_once()
+        passed = m.call_args[0][0]
+        assert passed == [os.path.abspath(d1), os.path.abspath(d2)]
+    finally:
+        sys.argv = orig_argv
+        os.chdir(orig_cwd)

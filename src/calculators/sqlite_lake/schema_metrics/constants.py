@@ -3,6 +3,7 @@ Metric ids for ``validate_schema_metrics_for_logs`` and the validation CLI.
 
 Each id matches the stem of ``schema/metrics_<id>.sql`` where applicable
 (``cycle_time_monthly`` ↔ ``metrics_cycle_time_monthly.sql``).
+``METRIC_MULTI_REPO_AGGREGATE`` is validated from dict fixtures only (not in ``ALL_METRICS``).
 """
 
 from __future__ import annotations
@@ -17,6 +18,8 @@ METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_MONTHLY = "throughput_per_active_develope
 METRIC_CYCLE_TIME_DELTA_EVENTS = "cycle_time_delta_events"
 METRIC_AUTHOR_COMMIT_PERCENTILES = "author_commit_percentiles"
 METRIC_CYCLE_TIME_BY_BRANCHES = "cycle_time_by_branches"
+# Dict-based validation only (not in ``ALL_METRICS`` / ``validate_schema_metrics_for_logs``).
+METRIC_MULTI_REPO_AGGREGATE = "multi_repo_aggregate"
 METRIC_ALL = "all"
 
 # Order is fixed: ``runner._PIPELINE`` must stay aligned (see module-level assert there).

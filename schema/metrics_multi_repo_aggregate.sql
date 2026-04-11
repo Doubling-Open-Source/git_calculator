@@ -1,12 +1,7 @@
--- NOT YET IMPLEMENTED — stub DDL only (no materialization, no schema_metrics validation).
---
--- Target legacy behavior: ``multi_repo_calculator`` cross-repository rollups (e.g.
--- ``aggregate_cycle_time_metrics``, ``aggregate_failure_rate_metrics``,
--- ``aggregate_throughput_metrics``, weekly throughput composites). Implementation can read
--- per-repo interchange snapshots (``repo_slug``, ``export_id`` / ``dataset_id``) already stored;
--- ``batch_id`` / ``cohort_id`` here group which exports participate in one aggregate. Grain TBD.
---
--- See ``src/calculators/multi_repo_calculator.py`` for Python aggregation semantics.
+-- IMPLEMENTED — materialization via Python (``sqlite_lake/schema_metrics/metrics_multi_repo_aggregate.py``).
+-- Cross-repo rollups match ``MultiRepoCalculator`` aggregate helpers (ADR 0011 source of truth).
+-- Inputs are per-repo metric dicts (not ``commits_export``); consumers INSERT rows after joining
+-- snapshots by ``batch_id`` / ``cohort_id``.
 
 PRAGMA foreign_keys = ON;
 

@@ -6,11 +6,11 @@ Exit 0 on match, 1 on mismatch, 2 on bad arguments.
 
 Resolution order when choosing repos:
   1. --repos-file FILE
-  2. --repo-dir DIR
+  2. --repo-dir DIR (repeat for multiple roots)
   3. If neither: use REPO_ROOT/local_schema_validation_repos.txt when it exists and lists paths (batch).
   4. Else: validate the current working directory once.
 
-Optional positional REPO_DIR is the same as --repo-dir (for ./validate_schema_metrics.py /path/to/repo).
+Optional positional REPO_DIR is merged with any ``--repo-dir`` values (after those flags, in order).
 
 Writes a new timestamped detail log under REPO_ROOT each run
 (local_schema_validation_run.detail.<UTC>.log) so local_schema_validation_run.detail.log
@@ -27,7 +27,7 @@ import traceback
 from subprocess import CalledProcessError
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 # This script lives in scripts/ at repo root
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -63,7 +63,9 @@ from src.calculators.sqlite_lake.schema_metrics import (
     DEFAULT_P75_STD_TOL,
     DEFAULT_SUM_AVG_TOL,
     METRIC_ALL,
+    METRIC_MULTI_REPO_AGGREGATE,
     cycle_time_monthly_canonical_pair_for_logs,
+    validate_multi_repo_aggregate_for_local_repo_paths,
     validate_schema_metrics_for_logs,
     validation_failure_footer,
     write_canonical_cycle_time_csv,
@@ -86,12 +88,138 @@ def _read_repos_file(path: str) -> list[str]:
     return roots
 
 
+def _run_multi_repo_aggregate_validation(
+    args: argparse.Namespace,
+    repo_dirs: List[str],
+    repos_file: Optional[str],
+) -> int:
+    """
+    One validation run: ``MultiRepoCalculator`` metrics per root, then aggregate table parity.
+    """
+    orig_cwd = os.getcwd()
+    n = len(repo_dirs)
+    if args.no_detail_log:
+        detail_path = None
+    elif args.detail_log is _AUTO_DETAIL_LOG:
+        detail_path = _new_detail_log_path()
+    else:
+        detail_path = os.path.abspath(os.path.expanduser(args.detail_log))
+    detail_f = None
+    if detail_path:
+        try:
+            detail_f = open(detail_path, "w", encoding="utf-8")
+        except OSError as exc:
+            print(f"Warning: could not write detail log {detail_path}: {exc}", file=sys.stderr)
+
+    def _detail(line: str) -> None:
+        if detail_f:
+            detail_f.write(line + "\n")
+            detail_f.flush()
+
+    def _log(msg: str, *, err: bool = False) -> None:
+        _detail(msg)
+        if args.quiet and not err:
+            return
+        print(msg, file=sys.stderr, flush=True)
+
+    try:
+        if detail_f:
+            _detail(f"# started {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
+            _detail(f"# git_calculator_root={_repo_root_str}")
+            _detail(f"# detail_log_path={detail_path}")
+            _detail(f"# metric={METRIC_MULTI_REPO_AGGREGATE}")
+            _detail(f"# repo_count={n} cwd={orig_cwd}")
+            if repos_file:
+                _detail(f"# repos_file={repos_file}")
+            _detail("# command_line: " + " ".join(sys.argv))
+            if not args.no_detail_audit:
+                _detail(
+                    "# audit: per-repo commit counts / series lengths; batch_id/cohort_id; "
+                    "aggregate row count; # timing: git metric collection vs sqlite round-trip"
+                )
+            _detail("")
+
+        _log(
+            f"Schema metrics validation — metric={METRIC_MULTI_REPO_AGGREGATE}, repos={n}"
+            + (f", list={repos_file}" if repos_file else "")
+        )
+        for i, d in enumerate(repo_dirs, start=1):
+            _log(f"  {i}. {d}")
+
+        bad = [d for d in repo_dirs if not os.path.isdir(d)]
+        if bad:
+            for d in bad:
+                msg = f"Not a directory: {d}"
+                _log(msg, err=True)
+                print(msg, file=sys.stderr, flush=True)
+            foot = validation_failure_footer()
+            _detail(foot)
+            print(foot, file=sys.stderr, flush=True)
+            summary_bad = f"Summary: FAILED — {METRIC_MULTI_REPO_AGGREGATE} (invalid paths)"
+            _detail(summary_bad)
+            print(summary_bad, file=sys.stderr, flush=True)
+            return 1
+
+        _log(
+            f"Computing per-repo metrics and validating {METRIC_MULTI_REPO_AGGREGATE} "
+            f"for {n} repo root(s) in one batch…"
+        )
+
+        def _audit_line(line: str) -> None:
+            _detail(f"      audit {METRIC_MULTI_REPO_AGGREGATE}: {line}")
+
+        audit_cb = (
+            _audit_line
+            if detail_f and not args.no_detail_audit
+            else None
+        )
+        err, collect_s, validate_s, agg_rows = validate_multi_repo_aggregate_for_local_repo_paths(
+            repo_dirs,
+            on_audit=audit_cb,
+        )
+        if detail_f:
+            _detail(
+                "# timing: "
+                f"collect_git_metrics_s={collect_s:.3f} "
+                f"aggregate_sqlite_compare_s={validate_s:.3f} "
+                f"total_s={collect_s + validate_s:.3f} "
+                f"aggregate_materialization_rows={agg_rows}"
+            )
+        if err:
+            _detail(err)
+            print(err, file=sys.stderr, flush=True)
+            foot = validation_failure_footer()
+            _detail(foot)
+            print(foot, file=sys.stderr, flush=True)
+            summary_fail = f"Summary: FAILED — {METRIC_MULTI_REPO_AGGREGATE} ({n} repo(s))"
+            _detail(summary_fail)
+            print(summary_fail, file=sys.stderr, flush=True)
+            return 1
+
+        if not args.quiet:
+            _log(
+                f"OK: {METRIC_MULTI_REPO_AGGREGATE} — aggregate table parity for {n} repo root(s) "
+                f"({agg_rows} aggregate rows; {collect_s:.1f}s git + {validate_s:.1f}s sqlite)"
+            )
+        summary_ok = (
+            f"Summary: passed — {METRIC_MULTI_REPO_AGGREGATE} OK ({n} repo(s), {agg_rows} rows)"
+        )
+        _detail(summary_ok)
+        print(summary_ok, file=sys.stderr, flush=True)
+        return 0
+    finally:
+        os.chdir(orig_cwd)
+        if detail_f:
+            detail_f.close()
+
+
 def main() -> int:
     logging.getLogger().setLevel(logging.WARNING)
     parser = argparse.ArgumentParser(
         description="Validate schema/metrics_*.sql materializations vs Python (ALL_METRICS).",
         epilog=(
-            f"Metrics: {METRIC_ALL}, {', '.join(ALL_METRICS)}. "
+            f"Metrics: {METRIC_ALL}, {', '.join(ALL_METRICS)}, "
+            f"{METRIC_MULTI_REPO_AGGREGATE} (all resolved repo roots in one batch; same repo list rules). "
             "Default repo list: local_schema_validation_repos.txt at git_calculator root when present."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -101,14 +229,18 @@ def main() -> int:
         nargs="?",
         default=None,
         metavar="REPO_DIR",
-        help="Optional single repo (same as --repo-dir)",
+        help="Optional repo root (merged after any --repo-dir values)",
     )
     parser.add_argument(
         "--repo-dir",
+        action="append",
+        dest="repo_dirs",
         metavar="DIR",
-        dest="repo_dir",
         default=None,
-        help="Single git repo (mutually exclusive with --repos-file and default batch file)",
+        help=(
+            "Git repo root; repeat for multiple repositories (mutually exclusive with --repos-file "
+            "and default batch file)"
+        ),
     )
     parser.add_argument(
         "--repos-file",
@@ -121,7 +253,10 @@ def main() -> int:
     parser.add_argument(
         "--metric",
         default=METRIC_ALL,
-        help=f"Metric id or '{METRIC_ALL}' (default). One of: {METRIC_ALL}, {', '.join(ALL_METRICS)}",
+        help=(
+            f"Metric id or '{METRIC_ALL}' (default). One of: {METRIC_ALL}, {', '.join(ALL_METRICS)}, "
+            f"{METRIC_MULTI_REPO_AGGREGATE}"
+        ),
     )
     parser.add_argument(
         "--out-dir",
@@ -184,13 +319,16 @@ def main() -> int:
     else:
         os.environ["GIT_CALCULATOR_SILENCE_GIT_RUN"] = "1"
 
-    repo_dir_opt = args.repo_dir or args.repo_dir_positional
-    if args.repos_file and repo_dir_opt:
+    repo_dirs_from_flag: List[str] = list(args.repo_dirs or [])
+    repo_dir_positional = args.repo_dir_positional
+    has_explicit_repos = bool(repo_dirs_from_flag) or bool(repo_dir_positional)
+
+    if args.repos_file and has_explicit_repos:
         print("Use only one of --repos-file / --repo-dir / REPO_DIR positional.", file=sys.stderr)
         return 2
 
     repos_file = args.repos_file
-    if not repos_file and not repo_dir_opt:
+    if not repos_file and not has_explicit_repos:
         if os.path.isfile(DEFAULT_REPOS_FILE):
             trial = _read_repos_file(DEFAULT_REPOS_FILE)
             if trial:
@@ -206,7 +344,17 @@ def main() -> int:
             print(f"No repo paths in {repos_file} (add one root per line).", file=sys.stderr)
             return 1
     else:
-        repo_dirs = [os.path.abspath(repo_dir_opt) if repo_dir_opt else os.getcwd()]
+        if repo_dirs_from_flag or repo_dir_positional:
+            repo_dirs = []
+            for p in repo_dirs_from_flag:
+                repo_dirs.append(os.path.abspath(os.path.expanduser(p)))
+            if repo_dir_positional:
+                repo_dirs.append(os.path.abspath(os.path.expanduser(repo_dir_positional)))
+        else:
+            repo_dirs = [os.getcwd()]
+
+    if args.metric == METRIC_MULTI_REPO_AGGREGATE:
+        return _run_multi_repo_aggregate_validation(args, repo_dirs, repos_file)
 
     n = len(repo_dirs)
     orig_cwd = os.getcwd()
