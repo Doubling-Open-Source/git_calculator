@@ -16,6 +16,9 @@ from .metrics_active_developers_monthly import validate_active_developers_monthl
 from .metrics_throughput_per_active_developer_weekly import (
     validate_throughput_per_active_developer_weekly_for_logs,
 )
+from .metrics_throughput_per_active_developer_monthly import (
+    validate_throughput_per_active_developer_monthly_for_logs,
+)
 from .metrics_change_failure_monthly import validate_change_failure_monthly_for_logs
 from .metrics_cycle_time_delta_events import validate_cycle_time_delta_events_for_logs
 from .metrics_cycle_time_monthly import (
@@ -82,6 +85,14 @@ def _pipe_throughput_per_active_developer_weekly(
     )
 
 
+def _pipe_throughput_per_active_developer_monthly(
+    ctx: _PipelineContext, on_ok_audit: AuditCallback
+) -> Optional[str]:
+    return validate_throughput_per_active_developer_monthly_for_logs(
+        ctx.logs, ctx.repo_slug, ctx.conn, on_ok_audit=on_ok_audit
+    )
+
+
 def _pipe_cycle_time_delta_events(ctx: _PipelineContext, on_ok_audit: AuditCallback) -> Optional[str]:
     return validate_cycle_time_delta_events_for_logs(
         ctx.logs, ctx.repo_slug, ctx.conn, on_ok_audit=on_ok_audit
@@ -95,6 +106,7 @@ _PIPELINE: Tuple[MetricPipe, ...] = (
     _pipe_throughput_monthly,
     _pipe_active_developers_monthly,
     _pipe_throughput_per_active_developer_weekly,
+    _pipe_throughput_per_active_developer_monthly,
     _pipe_cycle_time_delta_events,
 )
 assert len(_PIPELINE) == len(ALL_METRICS), "pipeline steps out of sync with ALL_METRICS"
