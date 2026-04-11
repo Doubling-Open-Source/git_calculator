@@ -15,6 +15,7 @@ from .constants import (
     METRIC_CYCLE_TIME_DELTA_EVENTS,
     METRIC_CYCLE_TIME_MONTHLY,
     METRIC_THROUGHPUT_MONTHLY,
+    METRIC_MULTI_REPO_AGGREGATE,
 )
 from .metrics_throughput_per_active_developer_weekly import (
     CanonicalThroughputPerActiveDeveloperWeekly,
@@ -120,6 +121,16 @@ from .metrics_active_developers_weekly import (
     run_active_developers_weekly_schema_select,
     validate_active_developers_weekly_for_logs,
 )
+from .metrics_multi_repo_aggregate import (
+    collect_metrics_for_local_repo_paths,
+    materialize_metrics_multi_repo_aggregate,
+    multi_repo_aggregate_materialization_rows,
+    normalize_multi_repo_path_list,
+    read_metrics_multi_repo_aggregate_rows,
+    validate_multi_repo_aggregate_builtin_fixture,
+    validate_multi_repo_aggregate_for_local_repo_paths,
+    validate_multi_repo_aggregate_for_metrics_dict,
+)
 from .runner import validate_schema_metrics_for_logs
 
 __all__ = [
@@ -138,6 +149,7 @@ __all__ = [
     "METRIC_CYCLE_TIME_DELTA_EVENTS",
     "METRIC_CYCLE_TIME_MONTHLY",
     "METRIC_THROUGHPUT_MONTHLY",
+    "METRIC_MULTI_REPO_AGGREGATE",
     "CanonicalThroughputPerActiveDeveloperWeekly",
     "CanonicalThroughputPerActiveDeveloperMonthly",
     "CanonicalChangeFailureMonthly",
@@ -215,4 +227,12 @@ __all__ = [
     "validate_throughput_monthly_for_logs",
     "validation_failure_footer",
     "write_canonical_cycle_time_csv",
+    "materialize_metrics_multi_repo_aggregate",
+    "multi_repo_aggregate_materialization_rows",
+    "read_metrics_multi_repo_aggregate_rows",
+    "validate_multi_repo_aggregate_builtin_fixture",
+    "validate_multi_repo_aggregate_for_local_repo_paths",
+    "validate_multi_repo_aggregate_for_metrics_dict",
+    "collect_metrics_for_local_repo_paths",
+    "normalize_multi_repo_path_list",
 ]
