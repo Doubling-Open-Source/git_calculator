@@ -9,7 +9,6 @@ import os
 import logging
 from typing import Dict, List, Tuple, Any
 from collections import defaultdict
-import pandas as pd
 from datetime import datetime
 import json
 
@@ -411,6 +410,8 @@ class MultiRepoCalculator:
         Returns:
             Path to the output directory
         """
+        import pandas as pd
+
         os.makedirs(output_dir, exist_ok=True)
 
         # Save individual repository metrics

@@ -3,8 +3,7 @@ from collections import defaultdict
 import logging
 import os
 from typing import Dict, List, Tuple
-import pandas as pd
-import matplotlib.pyplot as plt
+
 from src.git_ir import git_log, format_git_logs_as_string
 from src.visualizers.chart_generator import setup_plot_style, ensure_metrics_dir
 
@@ -69,6 +68,8 @@ def calculate_percentiles(
     Returns:
         dict: Dictionary with authors as keys and their percentile ranks as values.
     """
+    import pandas as pd
+
     total_commits = {
         author: sum(count for _, count in commits)
         for author, commits in commits_by_author.items()
@@ -94,6 +95,9 @@ def plot_commit_trends(
         commits_by_author: Dictionary with authors as keys and lists of (date, count) tuples as values.
         output_file: Name of the output file.
     """
+    import matplotlib.pyplot as plt
+    import pandas as pd
+
     setup_plot_style()
 
     # Convert data to DataFrame
@@ -149,6 +153,8 @@ def save_commit_data(
         commits_by_author: Dictionary with authors as keys and lists of (date, count) tuples as values.
         prefix: Prefix for output files.
     """
+    import pandas as pd
+
     metrics_dir = ensure_metrics_dir()
 
     # Save individual author data
