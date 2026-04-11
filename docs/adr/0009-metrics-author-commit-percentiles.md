@@ -12,6 +12,10 @@ The stub [`schema/metrics_author_commit_percentiles.sql`](../../schema/metrics_a
 
 Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-minimal-commit-storage-schema.md)).
 
+## Source of truth vs SQL
+
+**Legacy** [`calculate_percentiles`](../../src/calculators/commit_analyzer.py) (and how upstream code builds `commits_by_author`) **is the source of truth**. **SQL** is **guidance** for schema and materialization; update SQL and validation to follow legacy, including pandas `rank` behavior and edge cases.
+
 ## Decision
 
 **Table:** [`schema/metrics_author_commit_percentiles.sql`](../../schema/metrics_author_commit_percentiles.sql)
@@ -27,6 +31,14 @@ Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-min
 
 - Store **`author_ref` only** — never raw email or `author_label_pii` ([ADR 0001](0001-minimal-commit-storage-schema.md), [ADR 0004](0004-metrics-cycle-time-delta-events.md) PII posture).
 - **Finalize `as_of_period` meaning** before turning on `validate_schema_metrics`: one table can support either monthly windows or a single export-wide snapshot, but not ambiguous mixed keys.
+
+## Implementation (when implemented)
+
+Align with [ADR 0007](0007-metrics-throughput-per-active-developer-monthly.md) style: **one** set of numbers — legacy [`calculate_percentiles`](../../src/calculators/commit_analyzer.py) (and the same upstream `commits_by_author` / export inputs the legacy path uses), plus **minimal formatting** only in the table and in canonical comparison (e.g. fixed `YYYY-MM` for month-scoped rows if legacy uses unpadded month keys elsewhere).
+
+- **Legacy parity:** Validation should call the existing calculator (or a thin wrapper that only reshapes output), then compare row-by-row to the materialization `SELECT`. On mismatch, **change SQL** to match legacy.
+- **Module wiring:** `schema_metrics/metrics_author_commit_percentiles.py`, commented reference `INSERT … SELECT` in [`schema/metrics_author_commit_percentiles.sql`](../../schema/metrics_author_commit_percentiles.sql), [`runner.py`](../../src/calculators/sqlite_lake/schema_metrics/runner.py) + [`constants.py`](../../src/calculators/sqlite_lake/schema_metrics/constants.py), tests under `tests/test_metrics_author_commit_percentiles.py` (or equivalent).
+- **PII:** Keep **`author_ref` only** in the table; validation and docs stay explicit that this is higher sensitivity than repo-level aggregates ([ADR 0004](0004-metrics-cycle-time-delta-events.md)).
 
 ## Personally identifiable information (PII)
 
