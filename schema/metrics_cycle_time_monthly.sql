@@ -30,6 +30,9 @@ CREATE INDEX IF NOT EXISTS idx_metrics_ctm_repo_dataset
 /*
  * Reference: materialization SELECT (bind :repo_slug, :dataset_id, :computed_at, etc.)
  * Wrap final SELECT as INSERT INTO metrics_cycle_time_monthly (...) SELECT ...
+ *
+ * Steps: ordered commits → per-author LAG deltas (log_ordinal DESC, julianday local)
+ * → drop NULL → bucket by YYYY-MM → sum/avg/p75/stdev (same p75 interp as SqliteLake).
  * ---------------------------------------------------------------------------
 WITH ordered AS (
   SELECT sha, author_ref, committed_at, log_ordinal
@@ -38,6 +41,7 @@ WITH ordered AS (
 ),
 deltas AS (
   SELECT committed_at,
+    -- Oldest→newest via log_ordinal DESC; LAG = older; minutes = local wall clock.
     ROUND((
       julianday(datetime(committed_at, 'unixepoch', 'localtime'))
       - julianday(datetime(
