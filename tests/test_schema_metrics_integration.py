@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any, List, Optional
 from unittest.mock import patch
 
 from src.calculators.sqlite_lake.commits_export_populate import (
@@ -11,12 +10,18 @@ from src.calculators.sqlite_lake.commits_export_populate import (
     populate_commits_export_from_logs,
 )
 from src.calculators.sqlite_lake.schema_metrics import METRIC_ALL, validate_schema_metrics_for_logs
+from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_monthly import (
+    active_developers_monthly_canonical_from_logs,
+)
 from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly import (
     validate_cycle_time_monthly_for_logs,
 )
+from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_monthly import (
+    throughput_monthly_canonical_from_logs,
+)
 from src.util.git_util import CommitMessagesBatch
 
-from tests.schema_metrics_fixtures import FakeCommit, apply_commit_parent_edges
+from tests.schema_metrics_fixtures import FakeCommit
 
 
 def _single_author_toy_logs_and_batch() -> tuple[list[FakeCommit], CommitMessagesBatch]:
@@ -45,36 +50,19 @@ def _single_author_toy_logs_and_batch() -> tuple[list[FakeCommit], CommitMessage
     return logs, batch
 
 
-def _linear_parent_edges(logs: List[FakeCommit]) -> dict[str, list[str]]:
-    """Newest-first git log: each commit's first parent is the next older commit."""
-    edges: dict[str, list[str]] = {}
-    for i, c in enumerate(logs):
-        edges[c._sha] = [logs[i + 1]._sha] if i + 1 < len(logs) else []
-    return edges
-
-
-def _populate_with_linear_edges(
-    conn: Any,
-    repo_slug: str,
-    logs: List[Any],
-    *,
-    commit_messages: Optional[CommitMessagesBatch] = None,
-) -> int:
-    n = populate_commits_export_from_logs(
-        conn, repo_slug, logs, commit_messages=commit_messages
-    )
-    apply_commit_parent_edges(conn, repo_slug, _linear_parent_edges(logs))
-    return n
-
-
 def test_all_metrics_match_python_single_author_synthetic():
-    """METRIC_ALL with strict tols and parent edges so cycle_time_by_branches is exercised."""
+    """METRIC_ALL SQL↔legacy parity at tol=0; no synthetic parent-edge harness."""
     logs, batch = _single_author_toy_logs_and_batch()
     repo_slug = "local:schema_metrics_e2e"
+
+    # External oracle: legacy helpers (not SQL write/read of the same rows).
+    adm = active_developers_monthly_canonical_from_logs(logs)
+    assert {r.period_month for r in adm} == {"2023-09", "2023-10", "2023-11"}
+    assert all(r.unique_author_count == 1 for r in adm)
+    tpm = throughput_monthly_canonical_from_logs(logs)
+    assert sum(r.commit_count for r in tpm) == 12
+
     with patch(
-        "src.calculators.sqlite_lake.commits_export_populate.populate_commits_export_from_logs",
-        side_effect=_populate_with_linear_edges,
-    ), patch(
         "src.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
         return_value=batch,
     ):
