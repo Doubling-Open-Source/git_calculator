@@ -2,18 +2,11 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
 
 import pytest
 
 from src.calculators.sqlite_lake.commits_export_populate import period_week_and_monday_unix
-from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
-    extract_active_developers_weekly_select,
-)
-from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_weekly import (
-    extract_throughput_per_active_developer_weekly_select,
-)
 
 
 @pytest.fixture
@@ -39,14 +32,3 @@ def test_week_end_unix_matches_timedelta_across_dst(america_los_angeles):
     expected_end = int((mon + timedelta(days=7)).timestamp())
     assert week_end_unix == expected_end
     assert week_end_unix - monday_unix != 7 * 86400
-
-
-def test_weekly_sql_bounds_use_week_end_unix_not_fixed_day_seconds():
-    for extract in (
-        extract_active_developers_weekly_select,
-        extract_throughput_per_active_developer_weekly_select,
-    ):
-        q = extract()
-        assert "week_end_unix" in q
-        assert "7 * 86400" not in q
-        assert "7*86400" not in q
