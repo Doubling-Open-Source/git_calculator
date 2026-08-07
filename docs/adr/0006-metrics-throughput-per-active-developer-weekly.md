@@ -22,7 +22,7 @@ Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-min
 | `throughput_per_active_dev` | `total_commits / active_authors_in_week`, or `0` if denominator is `0`. |
 | Lineage | `source_commits_schema_version`, `computed_at`, `tenant_id`, `metrics_schema_version`. |
 
-**Materialization:** The reference `INSERT … SELECT` is portable SQL: it reads `commits_export.period_week` and `commits_export.week_monday_unix` (Monday 00:00 local as unix seconds), populated by the exporter to match legacy `isocalendar` / `fromisocalendar`.
+**Materialization:** Portable SQL reads `commits_export.period_week`, `week_monday_unix`, and `week_end_unix` (next Monday via exporter `timedelta(days=7)`). Lookback uses `local_days_shift` (same timedelta semantics). Do not use fixed `N*7*86400` across DST.
 
 ## Personally identifiable information (PII)
 

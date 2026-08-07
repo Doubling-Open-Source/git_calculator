@@ -8,7 +8,7 @@ Keyword flags follow ADR 0001 (%s / %b) for change-failure schema metrics.
 from __future__ import annotations
 
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from subprocess import CalledProcessError, run as sp_run
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -25,13 +25,19 @@ _COMMITS_EXPORT_SQL = SCHEMA_DIR / "commits_export.sql"
 _REV_LIST_PARENTS_CHUNK = 512
 
 
-def period_week_and_monday_unix(committed_at: int) -> Tuple[str, int]:
-    """ISO week label and Monday 00:00 local (unix), matching weekly legacy calculators."""
+def period_week_and_monday_unix(committed_at: int) -> Tuple[str, int, int]:
+    """
+    ISO week label, Monday 00:00 local (unix), and next Monday 00:00 local (unix).
+
+    ``week_end_unix`` uses ``timedelta(days=7)`` like legacy weekly calculators — not
+    ``monday + 7*86400`` (wrong across DST).
+    """
     dt = datetime.fromtimestamp(int(committed_at))
     iso_y, iso_w, _ = dt.isocalendar()
     period_week = f"{iso_y}-W{iso_w:02d}"
-    monday_unix = int(datetime.fromisocalendar(iso_y, iso_w, 1).timestamp())
-    return period_week, monday_unix
+    monday = datetime.fromisocalendar(iso_y, iso_w, 1)
+    week_end = monday + timedelta(days=7)
+    return period_week, int(monday.timestamp()), int(week_end.timestamp())
 
 
 def commits_export_ddl_script() -> str:
@@ -79,17 +85,19 @@ def populate_commits_export_from_logs(
         else:
             subj, body = _git_subject_body(c)
         sk, bk = subject_body_keyword_flags(subj, body)
-        period_week, week_monday_unix = period_week_and_monday_unix(committed_at)
+        period_week, week_monday_unix, week_end_unix = period_week_and_monday_unix(
+            committed_at
+        )
         cur.execute(
             """
             INSERT OR REPLACE INTO commits_export (
                 repo_slug, sha, parent_shas, parent_count, committed_at,
-                period_week, week_monday_unix, log_ordinal,
+                period_week, week_monday_unix, week_end_unix, log_ordinal,
                 committer_tz_offset, pii_protection_profile, author_ref, author_label_pii,
                 subject_has_keywords, body_has_keywords,
                 conventional_type, conventional_type_scope,
                 schema_version, tenant_id
-            ) VALUES (?, ?, '', 0, ?, ?, ?, ?, NULL, 'none', ?, NULL, ?, ?, NULL, NULL, 2, NULL)
+            ) VALUES (?, ?, '', 0, ?, ?, ?, ?, ?, NULL, 'none', ?, NULL, ?, ?, NULL, NULL, 3, NULL)
             """,
             (
                 repo_slug,
@@ -97,6 +105,7 @@ def populate_commits_export_from_logs(
                 committed_at,
                 period_week,
                 week_monday_unix,
+                week_end_unix,
                 log_ordinal,
                 author_ref,
                 sk,

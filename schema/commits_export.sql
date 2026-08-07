@@ -8,9 +8,9 @@
 -- conventional_type_scope: where/how conventional_type was derived (see ADR); NULL iff conventional_type IS NULL.
 -- pii_protection_profile: caller-chosen tier (none → advanced); see ADR — dictates how author_ref / author_label_pii are populated.
 -- log_ordinal: 0-based index in git_log() iteration order (same as git_ir: newest commit first).
--- period_week / week_monday_unix: naive-local ISO week label ``YYYY-Www`` and unix seconds for that week’s
--- Monday 00:00 local, matching ``datetime.fromtimestamp(committed_at).isocalendar()`` /
--- ``datetime.fromisocalendar(y, w, 1).timestamp()`` (same as weekly metrics legacy Python). Populated by the exporter.
+-- period_week / week_monday_unix / week_end_unix: naive-local ISO week label ``YYYY-Www``,
+-- Monday 00:00 local (unix), and next Monday 00:00 local (unix) via ``timedelta(days=7)``
+-- (not monday+7*86400 — DST-safe), matching weekly metrics legacy Python. Populated by the exporter.
 -- Metric SQL uses PARTITION BY author_ref ORDER BY log_ordinal DESC so LAG walks oldest→newest (positive minutes).
 
 PRAGMA foreign_keys = ON;
@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS commits_export (
     committed_at INTEGER NOT NULL,
     period_week TEXT NOT NULL,
     week_monday_unix INTEGER NOT NULL,
+    week_end_unix INTEGER NOT NULL,
     log_ordinal INTEGER NOT NULL,
     committer_tz_offset TEXT,
     pii_protection_profile TEXT NOT NULL CHECK (pii_protection_profile IN (

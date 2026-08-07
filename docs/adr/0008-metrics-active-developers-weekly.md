@@ -28,7 +28,7 @@ Source: [`commits_export`](../../schema/commits_export.sql) ([ADR 0001](0001-min
 |--------|------|
 | `repo_slug`, `dataset_id`, `period_week`, `weeks_back` | Grain; PK. `period_week` is ISO `YYYY-Www` from `commits_export`, same labeling as [ADR 0006](0006-metrics-throughput-per-active-developer-weekly.md). |
 | `total_commits` | Commits whose `committed_at` falls in that ISO week (same week bucket as legacy `extract_commits_and_authors_by_week`). |
-| `active_developer_count` | `COUNT(DISTINCT author_ref)` over authors with ≥1 commit in `[week_monday − weeks_back weeks, week_monday + 7 days)` in local time — matching legacy `cutoff_date` through `week_date + timedelta(days=7)`. |
+| `active_developer_count` | `COUNT(DISTINCT author_ref)` over authors with ≥1 commit in `[week_monday − weeks_back weeks, week_end]` local — matching legacy `timedelta`; SQL uses `week_end_unix` + `local_days_shift` (not `N*7*86400`). |
 | Lineage | `source_commits_schema_version`, `computed_at`, `tenant_id`, `metrics_schema_version`. |
 
 **Materialization:** Same portable week columns on `commits_export` as ADR 0006 so week boundaries match [`metrics_throughput_per_active_developer_weekly`](../../schema/metrics_throughput_per_active_developer_weekly.sql).

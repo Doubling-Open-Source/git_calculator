@@ -9,7 +9,10 @@ compare to SQL. Shared git-log pairing lives here when multiple metrics need the
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
+
+import sqlite3
 
 from src.calculators.sqlite_lake.paths import SCHEMA_DIR
 
@@ -47,7 +50,7 @@ def bind_materialization_params(
     repo_slug: str,
     *,
     dataset_id: str = "validation",
-    source_commits_schema_version: Optional[int] = 1,
+    source_commits_schema_version: Optional[int] = 3,
     computed_at: int = 0,
     tenant_id: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -59,3 +62,17 @@ def bind_materialization_params(
         "computed_at": computed_at,
         "tenant_id": tenant_id,
     }
+
+
+def register_local_days_shift(conn: sqlite3.Connection) -> None:
+    """
+    SQLite helper mirroring ``datetime.fromtimestamp(ts) + timedelta(days=n)``.
+
+    Needed for weekly lookback starts; fixed ``n*86400`` disagrees across DST.
+    """
+
+    def local_days_shift(ts: Any, days: Any) -> int:
+        base = datetime.fromtimestamp(int(ts))
+        return int((base + timedelta(days=int(days))).timestamp())
+
+    conn.create_function("local_days_shift", 2, local_days_shift)
