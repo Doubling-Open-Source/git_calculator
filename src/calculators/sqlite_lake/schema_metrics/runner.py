@@ -120,20 +120,22 @@ def _pipe_cycle_time_by_branches(ctx: _PipelineContext, on_ok_audit: AuditCallba
     )
 
 
-# Order must match ``ALL_METRICS`` in ``constants.py``.
+# Order must match ``ALL_METRICS`` in ``constants.py`` (name pairing, not length-only).
 _PIPELINE: Tuple[MetricPipe, ...] = (
     _pipe_cycle_time_monthly,
     _pipe_change_failure_monthly,
     _pipe_throughput_monthly,
     _pipe_active_developers_monthly,
-    _pipe_throughput_per_active_developer_weekly,
     _pipe_active_developers_weekly,
+    _pipe_throughput_per_active_developer_weekly,
     _pipe_throughput_per_active_developer_monthly,
     _pipe_cycle_time_delta_events,
     _pipe_author_commit_percentiles,
     _pipe_cycle_time_by_branches,
 )
-assert len(_PIPELINE) == len(ALL_METRICS), "pipeline steps out of sync with ALL_METRICS"
+assert [fn.__name__ for fn in _PIPELINE] == [f"_pipe_{mid}" for mid in ALL_METRICS], (
+    "pipeline steps out of sync with ALL_METRICS"
+)
 
 
 def validate_schema_metrics_for_logs(
