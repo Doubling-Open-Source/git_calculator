@@ -8,18 +8,20 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_de
     CanonicalThroughputPerActiveDeveloperWeekly,
     compare_throughput_per_active_developer_weekly,
     extract_throughput_per_active_developer_weekly_select,
+    throughput_per_active_developer_weekly_canonical_from_logs,
     validate_throughput_per_active_developer_weekly_for_logs,
 )
 
 from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs, message_batch_subject_body
 
 
-def test_extract_select_uses_labeled_cte_and_iso_udf():
+def test_extract_select_uses_exporter_week_bounds():
     q = extract_throughput_per_active_developer_weekly_select()
     assert "WITH labeled AS (" in q
     assert "c.period_week" in q
     assert "c.week_monday_unix" in q
-    assert "MAX(week_monday_unix)" in q
+    assert "c.week_end_unix" in q
+    assert "local_days_shift" in q
     assert ":repo_slug" in q
     assert ":weeks_back" in q
 
@@ -35,6 +37,11 @@ def test_single_author_two_commits_same_week_matches_legacy():
     conn = fresh_db_with_logs("local:tpadw", logs, batch)
     err = validate_throughput_per_active_developer_weekly_for_logs(logs, "local:tpadw", conn=conn)
     assert err is None, err
+    py = throughput_per_active_developer_weekly_canonical_from_logs(logs)
+    assert len(py) == 1
+    assert py[0].total_commits == 2
+    assert py[0].active_authors_in_week == 1
+    assert py[0].throughput_per_active_dev == 2.0
 
 
 def test_compare_detects_throughput_mismatch():

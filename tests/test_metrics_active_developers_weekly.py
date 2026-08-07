@@ -6,6 +6,7 @@ import time
 
 from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
     CanonicalActiveDevelopersWeekly,
+    active_developers_weekly_canonical_from_logs,
     compare_active_developers_weekly,
     extract_active_developers_weekly_select,
     validate_active_developers_weekly_for_logs,
@@ -36,6 +37,10 @@ def test_single_author_two_commits_same_week_matches_legacy():
     conn = fresh_db_with_logs("local:adw", logs, batch)
     err = validate_active_developers_weekly_for_logs(logs, "local:adw", conn=conn)
     assert err is None, err
+    py = active_developers_weekly_canonical_from_logs(logs)
+    assert len(py) == 1
+    assert py[0].total_commits == 2
+    assert py[0].active_developer_count == 1
 
 
 def test_compare_detects_count_mismatch():

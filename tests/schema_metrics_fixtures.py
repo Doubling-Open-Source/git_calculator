@@ -29,8 +29,9 @@ class FakeCommit:
 def message_batch_subject_body(
     logs: List[FakeCommit], subject: str, body: str
 ) -> CommitMessagesBatch:
-    """Third tuple element mirrors %B (used by change_failure validation path)."""
-    t = (subject, body, body)
+    """Third tuple element mirrors git ``%B`` (subject, blank line, body when body set)."""
+    raw_b = f"{subject}\n\n{body}" if body else subject
+    t = (subject, body, raw_b)
     return {c._sha: t for c in logs}
 
 

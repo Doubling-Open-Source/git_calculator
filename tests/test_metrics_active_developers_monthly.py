@@ -5,6 +5,7 @@ from __future__ import annotations
 import time
 
 from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_monthly import (
+    active_developers_monthly_canonical_from_logs,
     validate_active_developers_monthly_for_logs,
 )
 
@@ -22,3 +23,7 @@ def test_active_developers_monthly_matches_extract_authors():
     conn = fresh_db_with_logs("local:adm", logs, batch)
     err = validate_active_developers_monthly_for_logs(logs, "local:adm", conn)
     assert err is None, err
+    py = active_developers_monthly_canonical_from_logs(logs)
+    assert len(py) == 1
+    assert py[0].period_month == "2024-03"
+    assert py[0].unique_author_count == 2

@@ -6,6 +6,7 @@ import time
 
 from src.calculators.sqlite_lake.schema_metrics.metrics_author_commit_percentiles import (
     CanonicalAuthorCommitPercentile,
+    author_commit_percentiles_canonical_from_logs,
     compare_author_commit_percentiles,
     extract_author_commit_percentiles_select,
     validate_author_commit_percentiles_for_logs,
@@ -54,6 +55,10 @@ def test_validate_matches_legacy_tied_totals():
     conn = fresh_db_with_logs("local:tie", logs, batch)
     err = validate_author_commit_percentiles_for_logs(logs, "local:tie", conn=conn)
     assert err is None, err
+    py = author_commit_percentiles_canonical_from_logs(logs)
+    assert len(py) == 4
+    assert all(row.commit_count == 1 for row in py)
+    assert all(row.author_commit_percentile == 100.0 for row in py)
 
 
 def test_compare_detects_percentile_mismatch():
