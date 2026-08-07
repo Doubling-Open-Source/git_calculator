@@ -1,3 +1,5 @@
 *
 !.gitignore
 !compare_cycle_time_python_vs_sql.py
+!validate_schema_metrics.py
+!local_schema_validation_repos.example.txt
