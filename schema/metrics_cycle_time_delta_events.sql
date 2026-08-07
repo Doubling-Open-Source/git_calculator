@@ -25,6 +25,12 @@ CREATE INDEX IF NOT EXISTS idx_metrics_ctd_repo_author
 /*
  * Reference: materialization from commits_export
  * Bind: :repo_slug, :dataset_id, :computed_at, :source_commits_schema_version, :tenant_id
+ *
+ * Pairing steps (same idea as SqliteLake happy-path deltas):
+ *   1. log_ordinal: 0 = newest in git_log; ORDER BY log_ordinal DESC walks oldest→newest.
+ *   2. LAG(committed_at) = previous (older) commit for that author_ref.
+ *   3. Minutes = local julianday gap (DST-aware), not raw unix seconds / 60.
+ *   4. Drop rows where LAG is NULL (first commit per author).
  * ---------------------------------------------------------------------------
 INSERT INTO metrics_cycle_time_delta_events (
   repo_slug, dataset_id, author_ref, committed_at, child_sha, cycle_minutes, prev_sha,
@@ -46,6 +52,7 @@ FROM (
     author_ref,
     committed_at,
     sha AS child_sha,
+    -- Wall-clock minutes between this commit and LAG (older) in log order.
     ROUND((
       julianday(datetime(committed_at, 'unixepoch', 'localtime'))
       - julianday(datetime(
