@@ -27,7 +27,7 @@ def test_extract_select_reads_materialized_table():
 
 
 def test_validate_matches_legacy_linear_top():
-    """Three-commit linear history: golden parity with ``BranchLine`` (strategy ``top``)."""
+    """Linear history: Python BranchLine → table round-trip (not independent SQL)."""
     t0 = time.mktime((2024, 6, 3, 9, 0, 0, -1, -1, -1))
     t1 = time.mktime((2024, 6, 4, 9, 0, 0, -1, -1, -1))
     t2 = time.mktime((2024, 6, 5, 9, 0, 0, -1, -1, -1))
@@ -77,10 +77,11 @@ def test_compare_detects_strategy_mismatch():
     assert compare_branch_lines([a], [b]) is not None
 
 
-def test_validate_skips_when_no_parent_edges():
-    """Without a parent graph, metric validation is a no-op (other metrics stay unchanged)."""
+def test_validate_errors_when_no_parent_edges():
+    """Missing parent graph is not a silent success (no false SQL parity)."""
     t = time.mktime((2024, 7, 1, 12, 0, 0, -1, -1, -1))
     logs = [FakeCommit("a" * 40, t, "x@y")]
     conn = fresh_db_with_logs("local:noop", logs, message_batch_subject_body(logs, "s", ""))
     err = validate_cycle_time_by_branches_for_logs(logs, "local:noop", conn=conn)
-    assert err is None
+    assert err is not None
+    assert "commit_parent_edges" in err
