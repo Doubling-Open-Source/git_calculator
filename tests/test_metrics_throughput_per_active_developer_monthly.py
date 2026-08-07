@@ -11,6 +11,7 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_de
     CanonicalThroughputPerActiveDeveloperMonthly,
     compare_throughput_per_active_developer_monthly,
     extract_throughput_per_active_developer_monthly_select,
+    throughput_per_active_developer_monthly_canonical_from_logs,
     validate_throughput_per_active_developer_monthly_for_logs,
 )
 
@@ -40,6 +41,13 @@ def test_pre_month_activity_intersection_matches_canonical():
         logs, "local:tpadm", conn=conn, weeks_back=4
     )
     assert err is None, err
+    py = throughput_per_active_developer_monthly_canonical_from_logs(
+        logs, weeks_back=4
+    )
+    june_row = next(r for r in py if r.period_month == "2024-06")
+    assert june_row.total_commits == 1
+    assert june_row.active_authors_in_month == 1
+    assert june_row.throughput_per_active_dev == 1.0
 
 
 def test_june_only_commit_zero_denominator_when_no_pre_month_activity():
@@ -52,6 +60,13 @@ def test_june_only_commit_zero_denominator_when_no_pre_month_activity():
         logs, "local:tpadm2", conn=conn, weeks_back=4
     )
     assert err is None, err
+    py = throughput_per_active_developer_monthly_canonical_from_logs(
+        logs, weeks_back=4
+    )
+    june_row = next(r for r in py if r.period_month == "2024-06")
+    assert june_row.total_commits == 1
+    assert june_row.active_authors_in_month == 0
+    assert june_row.throughput_per_active_dev == 0.0
 
 
 def test_compare_detects_throughput_mismatch():

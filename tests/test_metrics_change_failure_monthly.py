@@ -21,7 +21,7 @@ def test_extract_select_references_metrics_subquery():
 
 
 def test_fix_keyword_in_body_matches_commits_export_flags():
-    """SQL uses subject/body flags; batch must align subj/body with third %B field for Python path."""
+    """SQL uses subject/body flags; batch third field must be full %B for Python path."""
     t1 = time.mktime((2024, 2, 1, 12, 0, 0, -1, -1, -1))
     t2 = time.mktime((2024, 2, 2, 12, 0, 0, -1, -1, -1))
     logs = [
@@ -36,6 +36,27 @@ def test_fix_keyword_in_body_matches_commits_export_flags():
     conn = fresh_db_with_logs("local:cf", logs, batch)
     err = validate_change_failure_monthly_for_logs(
         logs, "local:cf", conn=conn, commit_messages=batch
+    )
+    assert err is None, err
+
+
+def test_keyword_only_in_subject_with_percent_b_fixture():
+    """Helper builds %B from subject/body; subject keyword must parity with flags."""
+    t1 = time.mktime((2024, 3, 1, 12, 0, 0, -1, -1, -1))
+    t2 = time.mktime((2024, 3, 2, 12, 0, 0, -1, -1, -1))
+    logs = [
+        FakeCommit("4" * 40, t2, "a@x"),
+        FakeCommit("5" * 40, t1, "a@x"),
+    ]
+    batch = {
+        logs[0]._sha: message_batch_subject_body([logs[0]], "chore", "ok")[logs[0]._sha],
+        logs[1]._sha: message_batch_subject_body([logs[1]], "hotfix now", "details")[
+            logs[1]._sha
+        ],
+    }
+    conn = fresh_db_with_logs("local:cf_subj", logs, batch)
+    err = validate_change_failure_monthly_for_logs(
+        logs, "local:cf_subj", conn=conn, commit_messages=batch
     )
     assert err is None, err
 

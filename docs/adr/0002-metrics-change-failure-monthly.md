@@ -27,7 +27,9 @@ Downstream charts need a **monthly change-failure-style rate** without storing c
 
 **Primary key:** `(repo_slug, dataset_id, period_month)`.
 
-**Fix-like definition:** OR of the two boolean flags. This **differs** from [`change_failure_calculator.py`](../../src/calculators/change_failure_calculator.py), which scans the **full message** for keywords; parity is approximate unless exporters set flags from the same keyword set applied to `%B`.
+**Fix-like definition (materialized SQL):** OR of `subject_has_keywords` / `body_has_keywords` on `commits_export` (flags from `%s` / `%b` at export). That is the **table SoT**.
+
+**Validation Python path:** uses full-message (`%B`) keyword scan to compare rates. Fixtures must set the batch third field to real `%B` (`subject\\n\\nbody`) so the Python path stays aligned with how flags were derived from subject/body. When `%B` keywords appear only outside `%s`/`%b` regions, SQL and legacy may diverge — treat as known approximate parity unless exporters apply the same keyword set to `%B` for both flags and validation.
 
 ## Personally identifiable information (PII)
 
