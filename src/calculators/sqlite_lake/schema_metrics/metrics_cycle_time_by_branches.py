@@ -1,8 +1,9 @@
 """
-Parity: ``metrics_cycle_time_by_branches`` vs ``cycle_time_by_branches.BranchLine`` (ADR 0010).
+Python-materialized storage check for ``metrics_cycle_time_by_branches`` (ADR 0010).
 
-Legacy ``BranchLine`` is the source of truth; rows materialized in Python from ``commits_export``
-+ ``commit_parent_edges``.
+Legacy ``BranchLine`` is the source of truth. Rows are written from Python using
+``commits_export`` + ``commit_parent_edges``, then read back — this checks table
+round-trip / serialization, **not** an independent SQL graph materialization.
 """
 
 from __future__ import annotations
@@ -260,9 +261,10 @@ def validate_cycle_time_by_branches_for_logs(
     on_ok_audit: Optional[Callable[[str], None]] = None,
 ) -> Optional[str]:
     if _edge_count(conn, repo_slug) == 0:
-        if on_ok_audit is not None:
-            on_ok_audit("skipped (no commit_parent_edges for repo)")
-        return None
+        return (
+            "cycle_time_by_branches requires commit_parent_edges for the repo; "
+            "missing edges (not a silent skip / not independent SQL parity)"
+        )
 
     _ensure_metrics_table(conn)
     load_git_objects_from_commits_export(conn, repo_slug)
@@ -275,5 +277,7 @@ def validate_cycle_time_by_branches_for_logs(
     if err is not None:
         return err
     if on_ok_audit is not None:
-        on_ok_audit(f"branch_lines={len(py)} strategy={strategy!r}")
+        on_ok_audit(
+            f"python_materialized_roundtrip branch_lines={len(py)} strategy={strategy!r}"
+        )
     return None
