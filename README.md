@@ -50,7 +50,7 @@ failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failu
 ca.analyze_commits()
 
 # Generate charts and save data
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True)
 ```
@@ -74,7 +74,7 @@ from src.calculators import chart_generator as cg
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
 
 # Generate new charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
@@ -133,12 +133,13 @@ For debugging:
 To play around with the interpreter:
 ```
 python
+import tempfile
 from src.util.toy_repo import ToyRepoCreator
-trc = ToyRepoCreator("/Users/denalilumma/doubling-code/scratch")
+trc = ToyRepoCreator(tempfile.mkdtemp())
 even_intervals = [7 * i for i in range(12)]  # Weekly intervals
 trc.create_custom_commits(even_intervals)
 ```
-(Replace with your local path)
+(Or pass any empty directory path you control, e.g. a folder under this repo.)
 
 ```
 from src.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
@@ -250,7 +251,7 @@ data_by_month = cfc.extract_commit_data(logs)
 failure_rate_data = [(month, rate) for month, rate in cfc.calculate_change_failure_rate(data_by_month).items()]
 
 # Save data and generate charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True)
 
@@ -261,7 +262,7 @@ from src.calculators import chart_generator as cg
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
 
 # Generate new charts
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
@@ -279,14 +280,14 @@ The repository name is automatically detected from:
 You can also use a custom prefix instead of the repository name:
 ```py
 # Save with custom prefix
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data,
                   save_data=True,
                   prefix='team_a_')
 
 # Load with custom prefix
 cycle_time_data, failure_rate_data = cg.load_metrics_data(prefix='team_a_')
-cg.generate_charts(cycle_time_data=cycle_time_data, 
+cg.generate_charts(cycle_time_data=cycle_time_data,
                   failure_rate_data=failure_rate_data)
 ```
 
