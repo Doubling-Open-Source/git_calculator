@@ -3,7 +3,10 @@ Metric ids for ``validate_schema_metrics_for_logs`` and the validation CLI.
 
 Each id matches the stem of ``schema/metrics_<id>.sql`` where applicable
 (``cycle_time_monthly`` ↔ ``metrics_cycle_time_monthly.sql``).
-``METRIC_MULTI_REPO_AGGREGATE`` is validated from dict fixtures only (not in ``ALL_METRICS``).
+
+``ALL_METRICS``: SQL↔legacy parity metrics run under ``METRIC_ALL``.
+``OPT_IN_METRICS``: explicit ``--metric <id>`` only (not in ``METRIC_ALL``).
+``METRIC_MULTI_REPO_AGGREGATE``: dict-fixture validation only (not in either list).
 """
 
 from __future__ import annotations
@@ -33,5 +36,9 @@ ALL_METRICS: tuple[str, ...] = (
     METRIC_THROUGHPUT_PER_ACTIVE_DEVELOPER_MONTHLY,
     METRIC_CYCLE_TIME_DELTA_EVENTS,
     METRIC_AUTHOR_COMMIT_PERCENTILES,
-    METRIC_CYCLE_TIME_BY_BRANCHES,
 )
+
+# Explicit ``--metric`` only: Python-materialized round-trip, not SQL↔legacy parity.
+OPT_IN_METRICS: tuple[str, ...] = (METRIC_CYCLE_TIME_BY_BRANCHES,)
+
+RUNNABLE_METRICS: tuple[str, ...] = ALL_METRICS + OPT_IN_METRICS

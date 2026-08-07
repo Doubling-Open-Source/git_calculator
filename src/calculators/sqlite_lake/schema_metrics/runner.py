@@ -11,7 +11,7 @@ import sqlite3
 
 from src.util.git_util import CommitMessagesBatch, git_log_commit_messages_batch
 
-from .constants import ALL_METRICS, METRIC_ALL
+from .constants import ALL_METRICS, METRIC_ALL, OPT_IN_METRICS, RUNNABLE_METRICS
 from .metrics_active_developers_monthly import validate_active_developers_monthly_for_logs
 from .metrics_active_developers_weekly import validate_active_developers_weekly_for_logs
 from .metrics_author_commit_percentiles import validate_author_commit_percentiles_for_logs
@@ -131,11 +131,18 @@ _PIPELINE: Tuple[MetricPipe, ...] = (
     _pipe_throughput_per_active_developer_monthly,
     _pipe_cycle_time_delta_events,
     _pipe_author_commit_percentiles,
-    _pipe_cycle_time_by_branches,
 )
 assert [fn.__name__ for fn in _PIPELINE] == [f"_pipe_{mid}" for mid in ALL_METRICS], (
     "pipeline steps out of sync with ALL_METRICS"
 )
+
+_OPT_IN_PIPELINE: dict[str, MetricPipe] = {
+    mid: pipe
+    for mid, pipe in (
+        ("cycle_time_by_branches", _pipe_cycle_time_by_branches),
+    )
+}
+assert set(_OPT_IN_PIPELINE) == set(OPT_IN_METRICS), "opt-in pipes out of sync with OPT_IN_METRICS"
 
 
 def validate_schema_metrics_for_logs(
@@ -151,6 +158,9 @@ def validate_schema_metrics_for_logs(
     """
     Run one or all metric validations. Returns ``None`` if OK, else combined error text.
 
+    ``METRIC_ALL`` runs ``ALL_METRICS`` only (SQL↔legacy parity). Opt-in metrics such as
+    ``cycle_time_by_branches`` require an explicit metric id.
+
     Builds a single in-memory DB with ``commits_export`` and reuses it for every metric
     in scope. If ``per_metric`` is set, it is called after each metric with
     ``(metric_id, None)`` on success or ``(metric_id, error_text)`` on failure.
@@ -163,13 +173,21 @@ def validate_schema_metrics_for_logs(
         populate_commits_export_from_logs,
     )
 
-    want = set(ALL_METRICS) if metric == METRIC_ALL else {metric}
-    unknown = want - set(ALL_METRICS)
-    if unknown:
-        return (
-            f"Unknown metric(s): {sorted(unknown)}. "
-            f"Choose from {list(ALL_METRICS)} or {METRIC_ALL!r}."
-        )
+    if metric == METRIC_ALL:
+        want = set(ALL_METRICS)
+        steps: List[Tuple[str, MetricPipe]] = list(zip(ALL_METRICS, _PIPELINE))
+    else:
+        want = {metric}
+        unknown = want - set(RUNNABLE_METRICS)
+        if unknown:
+            return (
+                f"Unknown metric(s): {sorted(unknown)}. "
+                f"Choose from {list(RUNNABLE_METRICS)} or {METRIC_ALL!r}."
+            )
+        if metric in OPT_IN_METRICS:
+            steps = [(metric, _OPT_IN_PIPELINE[metric])]
+        else:
+            steps = [(mid, run) for mid, run in zip(ALL_METRICS, _PIPELINE) if mid == metric]
 
     errors: List[str] = []
     msg_batch = git_log_commit_messages_batch()
@@ -187,7 +205,7 @@ def validate_schema_metrics_for_logs(
         p75_std_tol=p75_std_tol,
     )
 
-    for mid, run in zip(ALL_METRICS, _PIPELINE):
+    for mid, run in steps:
         if mid not in want:
             continue
 
