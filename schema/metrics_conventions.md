@@ -1,8 +1,8 @@
 # Derived metrics — shared conventions
 
-Interchange DDL lives under `schema/metrics_*.sql`; each implemented table has an ADR in `docs/adr/0002`–`0008` (and 0001 for commits). **Stub** DDL (no materialization yet) is listed in [README_METRICS_STUBS.md](README_METRICS_STUBS.md), with decisions in `docs/adr/0009`–`0011`.
+Interchange DDL lives under `schema/metrics_*.sql`; each implemented table has an ADR in `docs/adr/` (0001 for commits). Status of stubs vs implemented files: [README_METRICS_STUBS.md](README_METRICS_STUBS.md).
 
-**Source of truth:** Legacy Python calculators (see `src/calculators/`) are authoritative for metric **definitions and numbers**, including edge cases. SQL files document **shape** and a reference `INSERT … SELECT`; when they diverge from legacy, **update the SQL** (and `schema_metrics` validation) to match — not the other way around unless legacy is deliberately changed with tests. See [ADR 0007 § Source of truth vs SQL](../docs/adr/0007-metrics-throughput-per-active-developer-monthly.md#source-of-truth-vs-sql).
+**Source of truth:** Legacy Python calculators (see `src/calculators/`) are authoritative for metric **definitions and numbers**, including edge cases. SQL files document **shape** and a reference `INSERT … SELECT` where applicable; when they diverge from legacy, **update the SQL** (and `schema_metrics` validation) to match — not the other way around unless legacy is deliberately changed with tests. See [ADR 0007 § Source of truth vs SQL](../docs/adr/0007-metrics-throughput-per-active-developer-monthly.md#source-of-truth-vs-sql). Exception: [ADR 0010](../docs/adr/0010-metrics-cycle-time-by-branches.md) stores Python-materialized `BranchLine` rows (round-trip), not an independent SQL graph.
 
 | Convention | Choice |
 |------------|--------|
