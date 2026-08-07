@@ -26,10 +26,13 @@ class SqliteLake:
     SQLite lake for cycle-time and change-failure.
     Repo-agnostic: pass repo_id to load_logs and to query methods.
     Optional repo_id on queries: when None, uses first repo in DB (convenience for single-repo).
+
+    Cycle-time happy path uses local ``commits.log_ordinal`` (git_log order) so pairing
+    matches Python / commits_export. Stock DevLake ``lake.commits`` has no ordinal —
+    that is why this column is a local extension (see docs/lake_schema_for_sqlite.md).
     """
 
     def __init__(self, path: Optional[str] = None):
-        self._path = path
         self.conn: sqlite3.Connection = schema.create_db(path)
 
     def close(self) -> None:

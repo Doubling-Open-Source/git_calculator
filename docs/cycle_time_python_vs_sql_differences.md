@@ -2,6 +2,12 @@
 
 When comparing Python (`cycle_time_by_commits_calculator`) and SQL (`sqlite_lake`) on real repos (e.g. ***REMOVED***), **diffs appear in deltas, fixed-bucket stats, and by-month stats**. This doc explains why and what we can do **without changing the DevLake/lake table schema** (no new columns).
 
+### Schema validation (`commits_export` + `schema/metrics_cycle_time_*.sql`)
+
+The in-repo **metrics** SQL validated by `scripts/validate_schema_metrics.py` uses table `commits_export` with column **`log_ordinal`** (git_log iteration order, newest-first index). LAG windows use `PARTITION BY author_ref ORDER BY log_ordinal DESC` so the window walks oldest→newest and matches Python `calculate_time_deltas` for the same export.
+
+The **lake** `commits` table in **stock DevLake** still has **no** log-sequence column. This repo’s **SqliteLake happy path** adds a **local** `log_ordinal` on populate and uses `ORDER BY log_ordinal DESC` so pairing matches Python / `commits_export`. Legacy `query_deltas_legacy_by_committed_date` (`ORDER BY committed_date, sha`) **warns once per process** that it breaks the ordinal contract.
+
 ---
 
 ## 1. Root causes
@@ -14,11 +20,9 @@ When comparing Python (`cycle_time_by_commits_calculator`) and SQL (`sqlite_lake
 - For each author, `commits` is therefore in **log order** (whatever order `git log` returned).
 - Pairs consecutive commits in that order: `(commits[i], commits[i+1])` → delta = newer − older.
 
-**SQL:** Uses **ORDER BY committed_date** (and nothing else) in the window:
+**SQL (SqliteLake happy path):** Uses **ORDER BY log_ordinal DESC** (local `commits.log_ordinal` from git_log order).
 
-- `LAG(committed_date) OVER (PARTITION BY author_email ORDER BY committed_date)`.
-- When two or more commits share the **same** `committed_date` (same second), order among them is **undefined** (implementation-dependent).
-- So “previous row” for LAG can differ from Python’s “previous in log order.”
+**SQL (legacy / stock DevLake-shaped):** Uses **ORDER BY committed_date, sha** with no ordinal — can diverge on timestamp ties; this repo warns if that path is used.
 
 **Effect:** For the same author and same set of commits, Python and SQL can pair commits differently whenever there are **duplicate timestamps**. That produces:
 

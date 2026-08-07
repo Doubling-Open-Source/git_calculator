@@ -67,11 +67,3 @@ def query_change_failure_chart_sql(
     Requires commits already populated.
     """
     return query_change_failure_by_month_sql(conn, repo_id)
-
-
-def get_change_failure_chart_data_sql(
-    conn: sqlite3.Connection,
-    repo_id: str,
-) -> List[Tuple[str, float]]:
-    """Chart-ready change failure. Requires commits populated."""
-    return query_change_failure_chart_sql(conn, repo_id)

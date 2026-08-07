@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-Compare cycle-time results: Python vs SQL.
+Compare cycle-time results: Python vs SqliteLake SQL (``commits.log_ordinal`` happy path).
 Writes CSVs and plot images to an output directory. Use diff and snapshots to verify parity.
+
+Uses the same ordinal pairing as ``commits_export`` / schema metrics
+(``ORDER BY log_ordinal DESC``). Do not use the legacy committed_date path for this script.
 
 Ways to pick the repo to compare:
 
@@ -25,11 +28,13 @@ import argparse
 import logging
 import os
 import sys
+from pathlib import Path
 
-# Run from repo root so src is importable
-REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if REPO_ROOT not in sys.path:
-    sys.path.insert(0, REPO_ROOT)
+# Run from repo root so src is importable (this script lives in scripts/)
+REPO_ROOT = Path(__file__).resolve().parent.parent
+_repo_root_str = str(REPO_ROOT)
+if _repo_root_str not in sys.path:
+    sys.path.insert(0, _repo_root_str)
 
 import pandas as pd
 from src.git_ir import git_log
@@ -50,7 +55,7 @@ def run_toy_repo():
     import tempfile
     from src.util.toy_repo import ToyRepoCreator
 
-    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=REPO_ROOT)
+    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=_repo_root_str)
     orig_cwd = os.getcwd()
     try:
         os.chdir(tmp)
@@ -93,7 +98,7 @@ def main():
     out_dir = (
         os.path.abspath(args.out_dir)
         if os.path.isabs(args.out_dir)
-        else os.path.join(REPO_ROOT, args.out_dir)
+        else str(REPO_ROOT / args.out_dir)
     )
     os.makedirs(out_dir, exist_ok=True)
 
@@ -158,11 +163,17 @@ def write_manifest(out_dir, no_plot, path):
 
 
 def run_comparison(logs, bucket_size, out_dir, no_plot):
+    """
+    Python calculators vs SqliteLake SQL (log_ordinal happy path).
+
+    CSVs are written sorted for stable ``diff``; lake queries already use ordinal pairing.
+    """
     repo_id = get_repo_id()
     lake = SqliteLake()
+    # load_logs sets commits.log_ordinal from git_log order.
     lake.load_logs(logs, repo_id)
 
-    # --- Deltas ---
+    # --- Deltas (pairing + wall-clock minutes) ---
     py_deltas = calculate_time_deltas(logs)
     sql_deltas = [[r[0], r[1]] for r in lake.query_deltas(repo_id=repo_id)]
     py_sorted = sorted(py_deltas, key=lambda x: (x[0], x[1]))

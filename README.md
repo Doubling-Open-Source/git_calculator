@@ -133,12 +133,13 @@ For debugging:
 To play around with the interpreter:
 ```
 python
+import tempfile
 from src.util.toy_repo import ToyRepoCreator
-trc = ToyRepoCreator("/Users/denalilumma/doubling-code/scratch")
+trc = ToyRepoCreator(tempfile.mkdtemp())
 even_intervals = [7 * i for i in range(12)]  # Weekly intervals
 trc.create_custom_commits(even_intervals)
 ```
-(Replace with your local path)
+(Or pass any empty directory path you control, e.g. a folder under this repo.)
 
 ```
 from src.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
@@ -462,8 +463,10 @@ The `summary_report.json` contains:
 ### Custom Workspace Directory
 
 ```python
-# Use a custom workspace for cloned repositories
-with MultiRepoManager(workspace_dir="/tmp/my_analysis") as repo_manager:
+import tempfile
+
+# Ephemeral workspace, or pass a stable path under your repo, e.g. "./my_analysis" resolved from cwd
+with MultiRepoManager(workspace_dir=tempfile.mkdtemp()) as repo_manager:
     # ... analysis code ...
 ```
 

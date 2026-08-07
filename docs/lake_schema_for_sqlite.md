@@ -1,6 +1,6 @@
 # SQLite schema for cycle-time (lake-compatible)
 
-This doc defines the minimal SQLite schema used in git_calculator to mirror the DevLake lake for cycle-time validation. Full lake details: [lake_schema_gitextractor_refdiff.md](../lake_schema_gitextractor_refdiff.md).
+This doc defines the minimal SQLite schema used in git_calculator to mirror the DevLake lake for cycle-time validation. Full lake details: [lake_schema_gitextractor_refdiff.md](../lake_schema_gitextractor_refdiff.md). For **chart-ready aggregates** over the privacy-aware interchange, see `schema/metrics_*.sql` and `docs/adr/0002`–`0006`.
 
 ## Minimal tables
 
@@ -15,6 +15,7 @@ Cycle-time logic needs: primary key, author, commit time, and repo scope. Change
 | committed_date     | INTEGER     | Unix timestamp (seconds) for ordering and diffing |
 | _raw_data_params   | TEXT        | Repo scope (e.g. `local:repo-name`) |
 | message            | TEXT        | Commit message (for change-failure; exists in DevLake) |
+| log_ordinal        | INTEGER     | **Local extension:** 0-based index in `git_log()` order (newest first). Not in stock DevLake `lake.commits`. Enables `ORDER BY log_ordinal DESC` cycle-time parity with Python / `commits_export`. |
 
 **Repo ID** (DevLake-style `local:<name>`): established at init via `SqliteLake(repo_id=None)`. If None, uses `get_repo_name()` (remote.origin.url or cwd basename).
 
@@ -28,13 +29,18 @@ CREATE TABLE IF NOT EXISTS commits (
   author_email TEXT,
   committed_date INTEGER,
   _raw_data_params TEXT,
-  message TEXT
+  message TEXT,
+  log_ordinal INTEGER NOT NULL DEFAULT 0
 );
 ```
 
 ## committed_date
 
 Stored as **INTEGER** (Unix timestamp) so that `LAG(committed_date)` and differences are straightforward and match Python’s `commit._when`.
+
+## log_ordinal (local extension)
+
+Stock DevLake cannot add a sequence column without breaking lake backwards compatibility. This repo’s SqliteLake **does** store `log_ordinal` on populate so the happy-path cycle-time SQL matches git_log pairing. Legacy `ORDER BY committed_date, sha` remains available (and warns) via `query_deltas_legacy_by_committed_date`.
 
 ## Python → SQL parity (Grafana-ready)
 
