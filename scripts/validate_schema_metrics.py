@@ -64,6 +64,8 @@ from src.calculators.sqlite_lake.schema_metrics import (
     DEFAULT_SUM_AVG_TOL,
     METRIC_ALL,
     METRIC_MULTI_REPO_AGGREGATE,
+    OPT_IN_METRICS,
+    RUNNABLE_METRICS,
     cycle_time_monthly_canonical_pair_for_logs,
     validate_multi_repo_aggregate_for_local_repo_paths,
     validate_schema_metrics_for_logs,
@@ -218,7 +220,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(
         description="Validate schema/metrics_*.sql materializations vs Python (ALL_METRICS).",
         epilog=(
-            f"Metrics: {METRIC_ALL}, {', '.join(ALL_METRICS)}, "
+            f"Metrics: {METRIC_ALL} (SQL parity: {', '.join(ALL_METRICS)}), "
+            f"opt-in: {', '.join(OPT_IN_METRICS)}, "
             f"{METRIC_MULTI_REPO_AGGREGATE} (all resolved repo roots in one batch; same repo list rules). "
             "Default repo list: local_schema_validation_repos.txt at git_calculator root when present."
         ),
@@ -254,8 +257,9 @@ def main() -> int:
         "--metric",
         default=METRIC_ALL,
         help=(
-            f"Metric id or '{METRIC_ALL}' (default). One of: {METRIC_ALL}, {', '.join(ALL_METRICS)}, "
-            f"{METRIC_MULTI_REPO_AGGREGATE}"
+            f"Metric id or '{METRIC_ALL}' (default). One of: {METRIC_ALL}, "
+            f"{', '.join(RUNNABLE_METRICS)}, "
+            f"{METRIC_MULTI_REPO_AGGREGATE}."
         ),
     )
     parser.add_argument(

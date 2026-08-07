@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from .constants import (
     ALL_METRICS,
+    OPT_IN_METRICS,
+    RUNNABLE_METRICS,
     METRIC_ALL,
     METRIC_ACTIVE_DEVELOPERS_MONTHLY,
     METRIC_ACTIVE_DEVELOPERS_WEEKLY,
@@ -134,6 +136,8 @@ from .runner import validate_schema_metrics_for_logs
 
 __all__ = [
     "ALL_METRICS",
+    "OPT_IN_METRICS",
+    "RUNNABLE_METRICS",
     "CANONICAL_CSV_FIELDS",
     "DEFAULT_P75_STD_TOL",
     "DEFAULT_SUM_AVG_TOL",

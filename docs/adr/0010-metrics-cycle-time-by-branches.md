@@ -16,7 +16,7 @@ Materializing comparable rows requires **graph inputs**: [`commits_export`](../.
 
 ## Decision
 
-**Table:** [`schema/metrics_cycle_time_by_branches.sql`](../../schema/metrics_cycle_time_by_branches.sql) — **IMPLEMENTED** as Python materialization (`schema_metrics/metrics_cycle_time_by_branches.py`), wired in `ALL_METRICS` / `runner.py`.
+**Table:** [`schema/metrics_cycle_time_by_branches.sql`](../../schema/metrics_cycle_time_by_branches.sql) — **IMPLEMENTED** as Python materialization (`schema_metrics/metrics_cycle_time_by_branches.py`). **Opt-in only** (`OPT_IN_METRICS`): not run under `METRIC_ALL`.
 
 | Column | Role |
 |--------|------|
