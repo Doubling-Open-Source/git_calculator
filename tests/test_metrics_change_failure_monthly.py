@@ -40,8 +40,8 @@ def test_fix_keyword_in_body_matches_commits_export_flags():
     assert err is None, err
 
 
-def test_keyword_only_in_subject_with_percent_b_fixture():
-    """Helper builds %B from subject/body; subject keyword must parity with flags."""
+def test_keyword_in_subject_with_explicit_percent_b():
+    """Subject keyword + matching %B; rates must agree SQL flags vs legacy %B path."""
     t1 = time.mktime((2024, 3, 1, 12, 0, 0, -1, -1, -1))
     t2 = time.mktime((2024, 3, 2, 12, 0, 0, -1, -1, -1))
     logs = [
@@ -49,10 +49,8 @@ def test_keyword_only_in_subject_with_percent_b_fixture():
         FakeCommit("5" * 40, t1, "a@x"),
     ]
     batch = {
-        logs[0]._sha: message_batch_subject_body([logs[0]], "chore", "ok")[logs[0]._sha],
-        logs[1]._sha: message_batch_subject_body([logs[1]], "hotfix now", "details")[
-            logs[1]._sha
-        ],
+        logs[0]._sha: ("chore", "ok", "chore\n\nok"),
+        logs[1]._sha: ("hotfix now", "details", "hotfix now\n\ndetails"),
     }
     conn = fresh_db_with_logs("local:cf_subj", logs, batch)
     err = validate_change_failure_monthly_for_logs(
