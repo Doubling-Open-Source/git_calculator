@@ -64,6 +64,7 @@ CREATE INDEX IF NOT EXISTS idx_commits_export_repo_parent_count
 
 -- One row per parent edge; enables SQL joins and recursive CTEs without parsing parent_shas.
 -- Invariant: COUNT(*) per (repo_slug, child_sha) = parent_count on commits_export; parent_ord is Git order (0 = first parent).
+-- Repopulate must DELETE edges for the repo before DELETE FROM commits_export (FK to commits_export).
 CREATE TABLE IF NOT EXISTS commit_parent_edges (
     repo_slug TEXT NOT NULL,
     child_sha TEXT NOT NULL,

@@ -65,6 +65,8 @@ def populate_commits_export_from_logs(
     batched git log for messages; pass a pre-built map to avoid duplicate git work.
     """
     cur = conn.cursor()
+    # Parent edges FK → commits_export; clear edges first so re-populate works with FKs ON.
+    cur.execute("DELETE FROM commit_parent_edges WHERE repo_slug = ?", (repo_slug,))
     cur.execute("DELETE FROM commits_export WHERE repo_slug = ?", (repo_slug,))
     batch = commit_messages if commit_messages is not None else git_log_commit_messages_batch()
     for log_ordinal, c in enumerate(logs):
