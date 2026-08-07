@@ -14,7 +14,12 @@ from src.calculators.throughput_calculator import (
     calculate_throughput_per_active_developer_by_week,
 )
 
-from ._common import bind_materialization_params, extract_sql_fragment, read_schema_sql
+from ._common import (
+    bind_materialization_params,
+    extract_sql_fragment,
+    read_schema_sql,
+    register_local_days_shift,
+)
 
 DEFAULT_WEEKS_BACK = 4
 THROUGHPUT_TOL = 1e-9
@@ -38,6 +43,7 @@ def run_throughput_per_active_developer_weekly_schema_select(
         **bind_materialization_params(repo_slug, **kw),
         "weeks_back": weeks_back,
     }
+    register_local_days_shift(conn)
     cur = conn.execute(
         extract_throughput_per_active_developer_weekly_select(),
         params,

@@ -13,12 +13,13 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly
 from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs, message_batch_subject_body
 
 
-def test_extract_select_uses_labeled_cte_and_iso_udf():
+def test_extract_select_uses_exporter_week_bounds():
     q = extract_active_developers_weekly_select()
     assert "WITH labeled AS (" in q
     assert "c.period_week" in q
     assert "c.week_monday_unix" in q
-    assert "MAX(week_monday_unix)" in q
+    assert "c.week_end_unix" in q
+    assert "local_days_shift" in q
     assert ":repo_slug" in q
     assert ":weeks_back" in q
     assert "COUNT(DISTINCT l.author_ref)" in q

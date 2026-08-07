@@ -1,9 +1,10 @@
--- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``); portable SQL (no UDFs).
+-- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
 -- Derived: per ISO week, total commits in that week and count of distinct authors with ≥1 commit
 -- in the rolling window [Monday−weeks_back weeks, next Monday 00:00] inclusive in local time — matching
 -- ``calculate_active_developers_by_week`` (not intersection semantics; see ADR 0006 vs 0008).
--- Requires ``commits_export.period_week`` and ``commits_export.week_monday_unix`` (populated by the exporter;
--- same semantics as legacy ``datetime.fromtimestamp`` / ``isocalendar``).
+-- Requires ``commits_export.period_week``, ``week_monday_unix``, ``week_end_unix`` (exporter).
+-- Upper bound uses ``week_end_unix``; lookback start uses ``local_days_shift`` (Python timedelta,
+-- registered by schema_metrics) — not ``N*7*86400``.
 -- ADR: docs/adr/0008-metrics-active-developers-weekly.md
 
 PRAGMA foreign_keys = ON;
@@ -33,7 +34,8 @@ WITH labeled AS (
     c.author_ref,
     c.committed_at,
     c.period_week,
-    c.week_monday_unix
+    c.week_monday_unix,
+    c.week_end_unix
   FROM commits_export AS c
   WHERE c.repo_slug = :repo_slug
 ),
@@ -41,7 +43,8 @@ agg AS (
   SELECT
     period_week,
     COUNT(*) AS total_commits,
-    MAX(week_monday_unix) AS week_monday_unix
+    MAX(week_monday_unix) AS week_monday_unix,
+    MAX(week_end_unix) AS week_end_unix
   FROM labeled
   GROUP BY period_week
 ),
@@ -49,7 +52,8 @@ bounds AS (
   SELECT
     a.period_week,
     a.total_commits,
-    a.week_monday_unix
+    a.week_monday_unix,
+    a.week_end_unix
   FROM agg AS a
 ),
 rolling AS (
@@ -59,8 +63,8 @@ rolling AS (
     (
       SELECT COUNT(DISTINCT l.author_ref)
       FROM labeled AS l
-      WHERE l.committed_at >= b.week_monday_unix - (:weeks_back * 7 * 86400)
-        AND l.committed_at <= b.week_monday_unix + (7 * 86400)
+      WHERE l.committed_at >= local_days_shift(b.week_monday_unix, -(:weeks_back * 7))
+        AND l.committed_at <= b.week_end_unix
     ) AS active_developer_count
   FROM bounds AS b
 )
