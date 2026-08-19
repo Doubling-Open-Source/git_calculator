@@ -7,6 +7,12 @@ and this project adheres to [PEP 440](https://peps.python.org/pep-0440/).
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-08-19
+
+### Fixed
+
+- Add Changesets and Keep a Changelog formatting for GitHub Releases.
+
 ## [2.0.0] - 2026-08-19
 
 ### Changed
