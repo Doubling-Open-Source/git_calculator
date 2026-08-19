@@ -165,6 +165,7 @@ cython_debug/
 .vscode/
 .cursor/
 .scratch/
+.worktrees/
 
 # Local schema validation (sensitive clone paths; see docs/schema_validation_run_log.md)
 local_schema_validation_repos.txt

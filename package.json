@@ -3,9 +3,13 @@
   "version": "2.0.1",
   "private": true,
   "scripts": {
-    "changeset:version": "changeset version && python3 scripts/format_changelog.py && python3 scripts/sync_pep440_version.py"
+    "changeset:version": "changeset version && python3 scripts/format_changelog.py && python3 scripts/sync_pep440_version.py",
+    "docs:compile": "mdcp compile --config docs/mdcp.config.json --docs-root docs",
+    "docs:check": "mdcp check --config docs/mdcp.config.json --docs-root docs --skip-vale"
   },
   "devDependencies": {
+    "@bwilliamson/mdcp-cli": "^0.7.4",
+    "@bwilliamson/mdcp-presets": "^0.7.0",
     "@changesets/cli": "^2.29.8"
   }
 }

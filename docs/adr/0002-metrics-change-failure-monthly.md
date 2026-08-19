@@ -18,7 +18,7 @@ Downstream charts need a **monthly change-failure-style rate** without storing c
 | `dataset_id` | Materialization run id (UUID, content hash, pipeline id). |
 | `period_month` | `YYYY-MM` via `strftime('%Y-%m', committed_at, 'unixepoch', 'localtime')`. |
 | `total_commits` | Commits in that month. |
-| `fix_like_commits` | Count where **`subject_has_keywords = 1 OR body_has_keywords = 1`**. |
+| `fix_like_commits` | Count of fix-like commits. **`all-branches`:** `subject_has_keywords = 1 OR body_has_keywords = 1`. **`squash`:** `subject_has_keywords = 1` only. |
 | `rate_percent` | `100.0 * fix_like_commits / total_commits` (0 if total 0), rounded to 0.1. |
 | `source_commits_schema_version` | Optional; max or representative `commits_export.schema_version` used. |
 | `computed_at` | Unix seconds when the row was written. |
@@ -27,9 +27,9 @@ Downstream charts need a **monthly change-failure-style rate** without storing c
 
 **Primary key:** `(repo_slug, dataset_id, period_month)`.
 
-**Fix-like definition (materialized SQL):** OR of `subject_has_keywords` / `body_has_keywords` on `commits_export` (flags from `%s` / `%b` at export). That is the **table SoT**.
+**Fix-like definition (materialized SQL):** follows work style (`docs/features/work-style.md`). Default (`all-branches`) is OR of `subject_has_keywords` / `body_has_keywords` on `commits_export` (flags from `%s` / `%b` at export). **`squash`** counts `subject_has_keywords` only. That is the **table SoT** for the chosen work style. Populate `commits_export` from the same commit set as the run (`all-branches` vs default-branch only).
 
-**Validation Python path:** uses full-message (`%B`) keyword scan to compare rates. Fixtures must set the batch third field to real `%B` (`subject\\n\\nbody`) so the Python path stays aligned with how flags were derived from subject/body. When `%B` keywords appear only outside `%s`/`%b` regions, SQL and legacy may diverge — treat as known approximate parity unless exporters apply the same keyword set to `%B` for both flags and validation.
+**Validation Python path:** `all-branches` uses full-message (`%B`) keyword scan to compare rates. `squash` uses the summary (`%s`) only. Fixtures must set the batch third field to real `%B` (`subject\\n\\nbody`) so the default path stays aligned with how flags were derived from subject/body. When `%B` keywords appear only outside `%s`/`%b` regions, SQL and legacy may diverge — treat as known approximate parity unless exporters apply the same keyword set to `%B` for both flags and validation.
 
 ## Personally identifiable information (PII)
 

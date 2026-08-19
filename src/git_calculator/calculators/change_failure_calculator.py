@@ -13,30 +13,35 @@ logging.basicConfig(
 )
 
 
-def extract_commit_data(logs):
+def extract_commit_data(logs, work_style="all-branches"):
     """
     Extract commit data and count commits containing specific keywords.
 
     Args:
         logs (list): List of commit logs.
+        work_style (str): ``all-branches`` scans the full message; ``squash`` scans the summary only.
 
     Returns:
         dict: Dictionary with months as keys and tuples (total commits, fix commits) as values.
     """
+    from git_calculator.work_style import SQUASH, require_known
+
+    require_known(work_style)
     data_by_month = defaultdict(lambda: (0, 0))
     keywords = {"revert", "hotfix", "bugfix", "bug", "fix", "problem", "issue"}
+    message_format = "%s" if work_style == SQUASH else "%B"
 
     for commit in logs:
         commit_date = datetime.fromtimestamp(commit._when)
         month_key = f"{commit_date.year}-{commit_date.month:02d}"
         total_commits, fix_commits = data_by_month[month_key]
 
-        # Extract commit message
         commit_message = (
-            git_run("log", "-n", "1", "--format=%B", commit).stdout.strip().lower()
+            git_run("log", "-n", "1", f"--format={message_format}", commit)
+            .stdout.strip()
+            .lower()
         )
 
-        # Check for keywords in commit message
         if any(keyword in commit_message for keyword in keywords):
             fix_commits += 1
 

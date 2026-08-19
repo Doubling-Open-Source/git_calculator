@@ -1,7 +1,7 @@
 -- IMPLEMENTED — materialization validated by ``schema_metrics`` (see ``sqlite_lake/schema_metrics``).
 -- Derived: monthly change-failure-style rate from commits_export keyword flags.
 -- ADR: docs/adr/0002-metrics-change-failure-monthly.md
--- Fix-like: (subject_has_keywords OR body_has_keywords) = 1 (not full-message LIKE).
+-- Fix-like: all-branches = (subject OR body); squash = subject_has_keywords only.
 
 PRAGMA foreign_keys = ON;
 
@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_metrics_cf_repo_dataset
 
 /*
  * Reference: materialization from commits_export
- * Bind: :repo_slug, :dataset_id, :computed_at (and optional :tenant_id, :source_ver)
+ * Bind: :repo_slug, :dataset_id, :computed_at, :work_style (and optional :tenant_id, :source_ver)
  * ---------------------------------------------------------------------------
 INSERT INTO metrics_change_failure_monthly (
   repo_slug, dataset_id, period_month, total_commits, fix_like_commits, rate_percent,
@@ -45,7 +45,10 @@ FROM (
   SELECT
     strftime('%Y-%m', committed_at, 'unixepoch', 'localtime') AS period_month,
     COUNT(*) AS total_commits,
-    SUM(CASE WHEN subject_has_keywords = 1 OR body_has_keywords = 1 THEN 1 ELSE 0 END) AS fix_like_commits
+    SUM(CASE WHEN :work_style = 'squash'
+             THEN CASE WHEN subject_has_keywords = 1 THEN 1 ELSE 0 END
+             ELSE CASE WHEN subject_has_keywords = 1 OR body_has_keywords = 1 THEN 1 ELSE 0 END
+        END) AS fix_like_commits
   FROM commits_export
   WHERE repo_slug = :repo_slug
   GROUP BY period_month
