@@ -36,7 +36,10 @@ logger = logging.getLogger(__name__)
 
 
 def analyze_single_repo(
-    repo_path: str, output_dir: str = "metrics", backend: str = "python"
+    repo_path: str,
+    output_dir: str = "metrics",
+    backend: str = "python",
+    work_style: str = "all-branches",
 ) -> bool:
     """
     Analyze a single repository.
@@ -57,7 +60,7 @@ def analyze_single_repo(
         # Get the data
         logger.info(f"Analyzing repository at: {repo_path} (backend={backend})")
 
-        logs = gir.git_log()
+        logs = gir.git_log(work_style=work_style)
         if backend == "sql":
             # Analyze commit trends by author
             ca.analyze_commits()
@@ -65,13 +68,18 @@ def analyze_single_repo(
             # Generate charts and save data
             # Backend-specific prefix so Python and SQL outputs can coexist for comparison
             chart_prefix = f"{get_repo_name()}_sql_"
-            generate_charts_sql(logs=logs, save_data=True, prefix=chart_prefix)
+            generate_charts_sql(
+                logs=logs,
+                save_data=True,
+                prefix=chart_prefix,
+                work_style=work_style,
+            )
         else:
             # Calculate cycle time
             tds = cycle_calc.calculate_time_deltas(logs)
             cycle_time_data = cycle_calc.commit_statistics_normalized_by_month(tds)
             # Calculate change failure rate
-            data_by_month = cfc.extract_commit_data(logs)
+            data_by_month = cfc.extract_commit_data(logs, work_style=work_style)
             failure_rate_data = [
                 (month, rate)
                 for month, rate in cfc.calculate_change_failure_rate(
@@ -291,6 +299,12 @@ Examples:
         default="python",
         help="Cycle-time backend: python (default) or sql; use sql to compare visual results",
     )
+    single_parser.add_argument(
+        "--work-style",
+        choices=["all-branches", "squash"],
+        default="all-branches",
+        help="all-branches: every ref (default). squash: default branch only; change-failure uses the summary",
+    )
 
     # Multiple repository analysis
     multi_parser = subparsers.add_parser("multi", help="Analyze multiple repositories")
@@ -341,7 +355,9 @@ Examples:
 
     # Execute commands
     if args.command == "single":
-        success = analyze_single_repo(args.repo_path, args.output, args.backend)
+        success = analyze_single_repo(
+            args.repo_path, args.output, args.backend, args.work_style
+        )
         sys.exit(0 if success else 1)
 
     elif args.command == "multi":

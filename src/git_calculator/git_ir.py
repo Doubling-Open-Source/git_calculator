@@ -334,16 +334,20 @@ def all_objects():
     """
 
 
-def git_log():
+def git_log(work_style: str = "all-branches"):
     def to_obj(line):
         parts = line.split("|", 5)
         parts[3] = parts[3].split()  # Multiple parents
         return git_obj.commit(*parts)
 
+    from git_calculator.work_style import log_revision_args
+
     res = [
         to_obj(line)
         for line in git_run(
-            "log", "--all", "--reflog", r"--format=%ct|%H|%T|%P|%ae|%an"
+            "log",
+            *log_revision_args(work_style),
+            r"--format=%ct|%H|%T|%P|%ae|%an",
         ).stdout.splitlines()
     ]
     git_obj.link_children()

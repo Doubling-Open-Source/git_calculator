@@ -72,18 +72,19 @@ def git_run(*args):
 _GIT_MSG_FIELD_SEP = "\x1f"
 
 
-def git_log_commit_messages_batch() -> CommitMessagesBatch:
+def git_log_commit_messages_batch(work_style: str = "all-branches") -> CommitMessagesBatch:
     """
-    One git invocation: all commits (--all --reflog), same coverage as git_ir.git_log().
+    One git invocation covering the same revisions as git_ir.git_log(work_style=...).
 
     Returns:
         Map full 40-char sha -> (subject %s, body %b, full_message %B) for populate + %B parity.
     """
+    from git_calculator.work_style import log_revision_args
+
     fmt = f"%H{_GIT_MSG_FIELD_SEP}%s{_GIT_MSG_FIELD_SEP}%b{_GIT_MSG_FIELD_SEP}%B"
     res = git_run(
         "log",
-        "--all",
-        "--reflog",
+        *log_revision_args(work_style),
         "-z",
         f"--pretty=format:{fmt}",
     )

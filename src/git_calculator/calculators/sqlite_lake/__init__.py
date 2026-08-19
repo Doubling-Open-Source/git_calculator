@@ -117,17 +117,25 @@ class SqliteLake:
         )
 
     def query_change_failure_by_month_sql(
-        self, repo_id: Optional[str] = None
+        self, repo_id: Optional[str] = None, work_style: str = "all-branches"
     ) -> List[tuple]:
         rid = self._repo(repo_id)
-        return cf.query_change_failure_by_month_sql(self.conn, rid) if rid else []
+        return (
+            cf.query_change_failure_by_month_sql(self.conn, rid, work_style=work_style)
+            if rid
+            else []
+        )
 
     def calculate_change_failure_rate_sql(
-        self, repo_id: Optional[str] = None
+        self, repo_id: Optional[str] = None, work_style: str = "all-branches"
     ) -> List[tuple]:
         """Change failure rate by month. Requires load_logs() first."""
         rid = self._repo(repo_id)
-        return cf.query_change_failure_by_month_sql(self.conn, rid) if rid else []
+        return (
+            cf.query_change_failure_by_month_sql(self.conn, rid, work_style=work_style)
+            if rid
+            else []
+        )
 
     def get_cycle_time_chart_data(self, repo_id: Optional[str] = None) -> List[tuple]:
         """Chart-ready cycle time: (month, p75_days, std_days). Requires load_logs() first."""
@@ -135,11 +143,15 @@ class SqliteLake:
         return cycle.query_cycle_time_chart_sql(self.conn, rid) if rid else []
 
     def get_change_failure_chart_data(
-        self, repo_id: Optional[str] = None
+        self, repo_id: Optional[str] = None, work_style: str = "all-branches"
     ) -> List[tuple]:
         """Chart-ready change failure: (month, rate). Requires load_logs() first."""
         rid = self._repo(repo_id)
-        return cf.query_change_failure_chart_sql(self.conn, rid) if rid else []
+        return (
+            cf.query_change_failure_chart_sql(self.conn, rid, work_style=work_style)
+            if rid
+            else []
+        )
 
 
 # Schema exports

@@ -53,6 +53,7 @@ def bind_materialization_params(
     source_commits_schema_version: Optional[int] = 3,
     computed_at: int = 0,
     tenant_id: Optional[str] = None,
+    work_style: str = "all-branches",
 ) -> Dict[str, Any]:
     """Parameters for commented materialization SELECTs in ``schema/metrics_*.sql``."""
     return {
@@ -61,6 +62,7 @@ def bind_materialization_params(
         "source_commits_schema_version": source_commits_schema_version,
         "computed_at": computed_at,
         "tenant_id": tenant_id,
+        "work_style": work_style,
     }
 
 

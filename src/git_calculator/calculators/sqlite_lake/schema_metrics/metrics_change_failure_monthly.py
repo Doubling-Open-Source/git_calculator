@@ -26,11 +26,15 @@ RATE_TOL = 0.05
 def _extract_commit_data_using_cached_messages(
     logs: List[Any],
     commit_messages: CommitMessagesBatch,
+    work_style: str = "all-branches",
 ) -> Dict[str, Tuple[int, int]]:
     """
-    Same aggregation as change_failure_calculator.extract_commit_data, using batched %B
-    from git_log_commit_messages_batch; missing sha falls back to git_run per commit.
+    Same aggregation as change_failure_calculator.extract_commit_data, using batched
+    messages. ``squash`` uses %s; ``all-branches`` uses %B.
     """
+    from git_calculator.work_style import SQUASH, require_known
+
+    require_known(work_style)
     data_by_month: Dict[str, Tuple[int, int]] = {}
     for commit in logs:
         commit_date = datetime.fromtimestamp(commit._when)
@@ -39,10 +43,11 @@ def _extract_commit_data_using_cached_messages(
         sha = get_full_sha(commit)
         got = commit_messages.get(sha)
         if got is not None:
-            commit_message = got[2].strip().lower()
+            commit_message = (got[0] if work_style == SQUASH else got[2]).strip().lower()
         else:
+            fmt = "%s" if work_style == SQUASH else "%B"
             commit_message = (
-                git_run("log", "-n", "1", "--format=%B", commit).stdout.strip().lower()
+                git_run("log", "-n", "1", f"--format={fmt}", commit).stdout.strip().lower()
             )
         if text_has_change_failure_keyword(commit_message):
             fix_commits += 1
@@ -80,11 +85,14 @@ def change_failure_monthly_canonical_from_logs(
     logs: List[Any],
     *,
     commit_messages: Optional[CommitMessagesBatch] = None,
+    work_style: str = "all-branches",
 ) -> List[CanonicalChangeFailureMonthly]:
     if commit_messages is not None:
-        data = _extract_commit_data_using_cached_messages(logs, commit_messages)
+        data = _extract_commit_data_using_cached_messages(
+            logs, commit_messages, work_style=work_style
+        )
     else:
-        data = extract_commit_data(logs)
+        data = extract_commit_data(logs, work_style=work_style)
     rates = calculate_change_failure_rate(data)
     out: List[CanonicalChangeFailureMonthly] = []
     for month in sorted(data.keys()):
@@ -142,11 +150,14 @@ def validate_change_failure_monthly_for_logs(
     conn: sqlite3.Connection,
     *,
     commit_messages: Optional[CommitMessagesBatch] = None,
+    work_style: str = "all-branches",
     on_ok_audit: Optional[Callable[[str], None]] = None,
 ) -> Optional[str]:
-    sql_rows = run_change_failure_monthly_schema_select(conn, repo_slug)
+    sql_rows = run_change_failure_monthly_schema_select(
+        conn, repo_slug, work_style=work_style
+    )
     py = change_failure_monthly_canonical_from_logs(
-        logs, commit_messages=commit_messages
+        logs, commit_messages=commit_messages, work_style=work_style
     )
     sql = canonical_change_failure_from_schema_rows(sql_rows)
     err = compare_change_failure_monthly(py, sql)

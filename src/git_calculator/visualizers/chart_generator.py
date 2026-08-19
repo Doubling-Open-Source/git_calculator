@@ -139,14 +139,16 @@ def prepare_cycle_time_chart_data_from_db(conn, repo_id: str):
     return df
 
 
-def prepare_change_failure_chart_data_from_db(conn, repo_id: str):
+def prepare_change_failure_chart_data_from_db(
+    conn, repo_id: str, work_style: str = "all-branches"
+):
     """
     Get chart-ready change failure from DB. Prepare done in SQL.
     Requires commits already populated (call lake.load_logs first).
     """
     from git_calculator.calculators.sqlite_lake import change_failure_calculator as cf
 
-    rows = cf.query_change_failure_chart_sql(conn, repo_id)
+    rows = cf.query_change_failure_chart_sql(conn, repo_id, work_style=work_style)
     df = pd.DataFrame(rows, columns=["Month", "Rate"])
     df["Month"] = pd.to_datetime(df["Month"], format="%Y-%m")
     return df.sort_values("Month")
@@ -283,13 +285,16 @@ def plot_change_failure_rate_from_db(
     repo_id: str,
     output_file="change_failure_rate_chart.png",
     output_path=None,
+    work_style: str = "all-branches",
 ):
     """
     Generate change failure rate chart by querying DB directly.
     Requires commits already populated (call lake.load_logs first).
     """
     setup_plot_style()
-    df = prepare_change_failure_chart_data_from_db(conn, repo_id)
+    df = prepare_change_failure_chart_data_from_db(
+        conn, repo_id, work_style=work_style
+    )
     _render_change_failure_chart(df, output_file, output_path)
 
 
@@ -471,7 +476,9 @@ def generate_charts(
         )
 
 
-def generate_charts_sql(logs=None, repo_id=None, save_data=False, prefix=None):
+def generate_charts_sql(
+    logs=None, repo_id=None, save_data=False, prefix=None, work_style="all-branches"
+):
     """
     Generate charts for both metrics by querying the lake DB directly (SQL path).
     Loads logs once, then queries. Creates SqliteLake internally.
@@ -499,10 +506,13 @@ def generate_charts_sql(logs=None, repo_id=None, save_data=False, prefix=None):
             lake.conn,
             repo_id,
             output_file=f"{prefix}change_failure_rate_chart.png",
+            work_style=work_style,
         )
         if save_data:
             ct_raw = lake.commit_statistics_normalized_by_month_sql(repo_id=repo_id)
-            cf_raw = lake.calculate_change_failure_rate_sql(repo_id=repo_id)
+            cf_raw = lake.calculate_change_failure_rate_sql(
+                repo_id=repo_id, work_style=work_style
+            )
             save_metrics_data(ct_raw, cf_raw, prefix)
 
 
