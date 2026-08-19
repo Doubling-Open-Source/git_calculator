@@ -1,11 +1,17 @@
 # Changelog
 
+## [Unreleased]
+
+## [2.1.0] - 2026-08-19
+
+### Added
+
+- Add `--work-style squash` so squash-merge clones follow the default branch and score change-failure from the commit summary only.
+
 All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [PEP 440](https://peps.python.org/pep-0440/).
-
-## [Unreleased]
 
 ## [2.0.1] - 2026-08-19
 

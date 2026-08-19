@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "git-calculator"
-version = "2.0.1"
+version = "2.1.0"
 description = "Calculate DORA-style metrics from a Git repository on the local filesystem."
 readme = "README.md"
 requires-python = ">=3.11"
