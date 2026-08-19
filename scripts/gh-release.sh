@@ -44,9 +44,14 @@ mapfile -t CHANGESET_FILES < <(changeset_files)
 read_current_version() {
   python3 - <<'PY'
 import json
+import tomllib
 from pathlib import Path
 
-print(json.loads(Path("package.json").read_text())["version"])
+pkg = Path("package.json")
+if pkg.is_file():
+    print(json.loads(pkg.read_text())["version"])
+else:
+    print(tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"])
 PY
 }
 

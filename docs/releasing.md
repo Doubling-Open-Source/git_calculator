@@ -1,6 +1,6 @@
 # Releasing
 
-This repo versions with [changesets](https://github.com/changesets/changesets) (`patch` / `minor` / `major`). After this tooling lands, you do **not** run `changeset init` again: `.changeset/config.json` and the `git-calculator` entry in `package.json` are the integration.
+This repo versions with [changesets](https://github.com/changesets/changesets) (`patch` / `minor` / `major`). How to add a changeset: `docs/changesets.md` (separate integration PR if that file is not on `main` yet).
 
 ## Bootstrap (once)
 
