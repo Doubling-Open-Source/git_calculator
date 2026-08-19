@@ -35,4 +35,4 @@ scripts/gh-release.sh
 
 That applies pending changesets (highest bump wins), rewrites the new `CHANGELOG.md` block to [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) (`Added` / `Changed` / `Fixed`), copies the PEP 440 version into `pyproject.toml`, commits `chore: release vX.Y.Z`, tags, pushes, and attaches sdist/wheel assets. GitHub Release notes are that version's Keep a Changelog body.
 
-Needs a clean tree, authenticated `gh`, Node.js, and `pip install -e ".[dev]"` (for `python -m build`).
+Needs a clean tree, authenticated `gh`, Node.js (`npm install` so `node_modules/.bin/changeset` exists), and `pip install -e ".[dev]"` (for `python -m build`).

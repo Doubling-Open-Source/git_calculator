@@ -29,7 +29,7 @@ need() {
 need gh
 need git
 need python3
-need npx
+need npm
 
 if [[ "$DRY_RUN" -eq 0 ]]; then
   gh auth status >/dev/null
@@ -124,6 +124,24 @@ print(text if text else f"Release {version}")
 PY
 }
 
+changeset_bin() {
+  echo "$ROOT/node_modules/.bin/changeset"
+}
+
+ensure_changeset_cli() {
+  local bin
+  bin="$(changeset_bin)"
+  if [[ -x "$bin" ]]; then
+    return 0
+  fi
+  echo "running npm install so @changesets/cli is available" >&2
+  npm install
+  if [[ ! -x "$bin" ]]; then
+    echo "npm install did not provide ${bin}" >&2
+    exit 2
+  fi
+}
+
 run() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     printf '+'
@@ -205,19 +223,20 @@ if [[ "$CURRENT" -eq 1 ]]; then
   exit 0
 fi
 
+ensure_changeset_cli
 echo "pending changesets: ${#CHANGESET_FILES[@]}"
 echo "current version:    $(read_current_version)"
 echo "next version:       $(preview_next_version)"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
-  run npx changeset version
+  run "$(changeset_bin)" version
   run python3 scripts/format_changelog.py
   run python3 scripts/sync_pep440_version.py
   publish_tag "$(preview_next_version)" 1
   exit 0
 fi
 
-npx changeset version
+"$(changeset_bin)" version
 python3 scripts/format_changelog.py
 python3 scripts/sync_pep440_version.py
 publish_tag "$(read_current_version)" 1
