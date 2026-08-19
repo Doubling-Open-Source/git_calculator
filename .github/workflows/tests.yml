@@ -19,3 +19,16 @@ jobs:
           git config --global user.email "test@example.com"
           git config --global user.name "Test Runner"
       - run: pytest tests/ -v
+
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - run: npm ci
+      - run: npm run docs:check

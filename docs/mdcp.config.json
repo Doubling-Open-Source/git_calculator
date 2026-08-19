@@ -1,0 +1,32 @@
+{
+  "compileOrder": ["features", "client", "developer", "glossary"],
+  "guides": [
+    { "name": "features" },
+    { "name": "client" },
+    {
+      "name": "developer",
+      "compile": { "title": "Developer guide" }
+    },
+    {
+      "name": "glossary",
+      "compile": {
+        "title": "Glossary",
+        "sectionsHeading": "Sections"
+      }
+    }
+  ],
+  "scan": {
+    "root": "docs",
+    "ignore": [
+      "adr",
+      "_build",
+      "releasing.md",
+      "changesets.md",
+      "cycle_time_python_vs_sql_differences.md",
+      "future_ruff_unused_variables.md",
+      "lake_schema_for_sqlite.md",
+      "lake_schema_gitextractor_refdiff.md",
+      "schema_validation_run_log.md"
+    ]
+  }
+}
