@@ -38,8 +38,10 @@ def resolve_default_branch() -> str:
     return pointed
 
 
-def log_revision_args(work_style: str) -> list[str]:
+def log_revision_args(
+    work_style: str, default_branch: str | None = None
+) -> list[str]:
     require_known(work_style)
     if work_style == SQUASH:
-        return [resolve_default_branch()]
+        return [default_branch or resolve_default_branch()]
     return ["--all", "--reflog"]

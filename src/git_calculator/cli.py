@@ -21,6 +21,12 @@ from git_calculator.visualizers.chart_generator import (
     get_repo_name,
 )
 from git_calculator import git_ir as gir
+from git_calculator.analyze_window import (
+    analyze_window,
+    parse_utc_instant,
+    window_series_csv_path,
+    write_window_series_csv,
+)
 from git_calculator.calculators import (
     cycle_time_by_commits_calculator as cycle_calc,
     change_failure_calculator as cfc,
@@ -40,6 +46,7 @@ def analyze_single_repo(
     output_dir: str = "metrics",
     backend: str = "python",
     work_style: str = "all-branches",
+    default_branch: str | None = None,
 ) -> bool:
     """
     Analyze a single repository.
@@ -60,7 +67,7 @@ def analyze_single_repo(
         # Get the data
         logger.info(f"Analyzing repository at: {repo_path} (backend={backend})")
 
-        logs = gir.git_log(work_style=work_style)
+        logs = gir.git_log(work_style=work_style, default_branch=default_branch)
         if backend == "sql":
             # Analyze commit trends by author
             ca.analyze_commits()
@@ -273,6 +280,9 @@ Examples:
   # Single repo with SQL backend (compare charts: <repo>_cycle_time_chart.png vs <repo>_sql_cycle_time_chart.png)
   git-calculator single /path/to/repo --output my_analysis --backend sql
 
+  # Windowed SQL series at weekly grain
+  git-calculator single /path/to/repo --from 2026-06-22T00:00:00Z --to 2026-08-17T00:00:00Z --grain weekly --backend sql
+
   # Analyze multiple repositories from config file
   git-calculator multi --config repo_config.json
 
@@ -304,6 +314,29 @@ Examples:
         choices=["all-branches", "squash"],
         default="all-branches",
         help="all-branches: every ref (default). squash: default branch only; change-failure uses the summary",
+    )
+    single_parser.add_argument(
+        "--from",
+        dest="window_from",
+        default=None,
+        help="UTC window start (RFC3339). Requires --to. Half-open [from, to).",
+    )
+    single_parser.add_argument(
+        "--to",
+        dest="window_to",
+        default=None,
+        help="UTC window end (RFC3339). Requires --from. Half-open [from, to).",
+    )
+    single_parser.add_argument(
+        "--grain",
+        choices=["weekly", "monthly"],
+        default="monthly",
+        help="Row aggregation for a windowed SQL run (default: monthly)",
+    )
+    single_parser.add_argument(
+        "--default-branch",
+        default=None,
+        help="Override default-branch detection for --work-style squash",
     )
 
     # Multiple repository analysis
@@ -355,8 +388,39 @@ Examples:
 
     # Execute commands
     if args.command == "single":
+        has_from = args.window_from is not None
+        has_to = args.window_to is not None
+        if has_from ^ has_to:
+            single_parser.error("--from and --to must be provided together")
+        if args.grain == "weekly" and not has_from:
+            single_parser.error("--grain weekly requires --from and --to")
+        if has_from and args.backend != "sql":
+            single_parser.error("a window requires --backend sql")
+        if has_from:
+            try:
+                window_start = parse_utc_instant(args.window_from, label="--from")
+                window_end = parse_utc_instant(args.window_to, label="--to")
+                series = analyze_window(
+                    args.repo_path,
+                    window_start=window_start,
+                    window_end=window_end,
+                    grain=args.grain,
+                    backend=args.backend,
+                    work_style=args.work_style,
+                    default_branch=args.default_branch,
+                )
+                csv_path = window_series_csv_path(args.repo_path, args.output)
+                write_window_series_csv(series, csv_path)
+            except (ValueError, RuntimeError) as exc:
+                logger.error("Failed to analyze repository: %s", exc)
+                sys.exit(1)
+            sys.exit(0)
         success = analyze_single_repo(
-            args.repo_path, args.output, args.backend, args.work_style
+            args.repo_path,
+            args.output,
+            args.backend,
+            args.work_style,
+            default_branch=args.default_branch,
         )
         sys.exit(0 if success else 1)
 

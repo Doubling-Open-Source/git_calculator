@@ -9,3 +9,5 @@ Terms that operators or contributors use in more than one guide, when the everyd
 - [work style](work-style.md)
 - [default branch](default-branch.md)
 - [commit summary](commit-summary.md)
+- [window](window.md)
+- [grain](grain.md)
