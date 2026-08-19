@@ -206,6 +206,23 @@ run() {
   fi
 }
 
+collect_dist_assets() {
+  local version="$1"
+  local f
+  shopt -u failglob
+  shopt -s nullglob
+  DIST_ASSETS=()
+  for f in \
+    dist/git_calculator-"${version}"-*.whl \
+    dist/git_calculator-"${version}".tar.gz \
+    dist/git-calculator-"${version}".tar.gz
+  do
+    if [[ -f "$f" ]]; then
+      DIST_ASSETS+=("$f")
+    fi
+  done
+}
+
 place_tag() {
   local tag="$1"
   run git tag -f -a "$tag" -m "$tag"
@@ -225,11 +242,10 @@ publish_tag() {
   fi
 
   run "$(venv_python)" -m build
-  shopt -s nullglob
-  local assets=(dist/"git_calculator-${version}"-*.whl dist/"git-calculator-${version}.tar.gz" dist/"git_calculator-${version}.tar.gz")
-  if [[ ${#assets[@]} -eq 0 ]]; then
+  collect_dist_assets "$version"
+  if [[ ${#DIST_ASSETS[@]} -eq 0 ]]; then
     if [[ "$DRY_RUN" -eq 1 ]]; then
-      assets=("dist/git_calculator-${version}-*.whl" "dist/git_calculator-${version}.tar.gz")
+      DIST_ASSETS=("dist/git_calculator-${version}-*.whl" "dist/git_calculator-${version}.tar.gz")
     else
       echo "no dist artifacts for ${version}" >&2
       exit 1
@@ -251,10 +267,10 @@ publish_tag() {
   notes_file="$(mktemp)"
   trap 'rm -f "$notes_file"' RETURN
   if [[ "$DRY_RUN" -eq 1 ]]; then
-    run gh release create "$tag" --title "$tag" --notes-file CHANGELOG.md "${assets[@]}"
+    run gh release create "$tag" --title "$tag" --notes-file CHANGELOG.md "${DIST_ASSETS[@]}"
   else
     changelog_notes "$version" >"$notes_file"
-    gh release create "$tag" --title "$tag" --notes-file "$notes_file" "${assets[@]}"
+    gh release create "$tag" --title "$tag" --notes-file "$notes_file" "${DIST_ASSETS[@]}"
   fi
 }
 
