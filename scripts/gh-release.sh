@@ -1,18 +1,23 @@
 #!/usr/bin/env bash
-# Apply pending changesets, then tag and create a GitHub Release.
-# Usage: scripts/gh-release.sh [--dry-run]
+# Apply pending changesets (or publish the current version), then tag and create a GitHub Release.
+# Usage: scripts/gh-release.sh [--dry-run] [--current]
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 DRY_RUN=0
-if [[ "${1:-}" == "--dry-run" ]]; then
-  DRY_RUN=1
-elif [[ "${1:-}" != "" ]]; then
-  echo "Usage: scripts/gh-release.sh [--dry-run]" >&2
-  exit 2
-fi
+CURRENT=0
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=1 ;;
+    --current) CURRENT=1 ;;
+    *)
+      echo "Usage: scripts/gh-release.sh [--dry-run] [--current]" >&2
+      exit 2
+      ;;
+  esac
+done
 
 need() {
   command -v "$1" >/dev/null || {
@@ -35,10 +40,6 @@ changeset_files() {
 }
 
 mapfile -t CHANGESET_FILES < <(changeset_files)
-if [[ ${#CHANGESET_FILES[@]} -eq 0 ]]; then
-  echo "no pending changesets; add one with: npx changeset" >&2
-  exit 1
-fi
 
 read_current_version() {
   python3 - <<'PY'
@@ -137,12 +138,6 @@ print(text if text else f"Release {version}")
 PY
 }
 
-CURRENT="$(read_current_version)"
-NEXT="$(preview_next_version)"
-echo "pending changesets: ${#CHANGESET_FILES[@]}"
-echo "current version:    ${CURRENT}"
-echo "next version:       ${NEXT}"
-
 run() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     printf '+'
@@ -153,52 +148,86 @@ run() {
   fi
 }
 
-if [[ "$DRY_RUN" -eq 1 ]]; then
-  TAG="v${NEXT}"
-  run npx changeset version
+publish_tag() {
+  local version="$1"
+  local tag="v${version}"
+  local commit_bump="$2"
+
+  if [[ "$DRY_RUN" -eq 0 ]]; then
+    if git rev-parse "$tag" >/dev/null 2>&1; then
+      echo "tag already exists: ${tag}" >&2
+      exit 1
+    fi
+  fi
+
+  echo "version: ${version}"
+  echo "tag:     ${tag}"
+
   run python3 -m build
-  run git add package.json pyproject.toml CHANGELOG.md .changeset
-  run git commit -m "chore: release ${TAG}"
-  run git tag -a "$TAG" -m "$TAG"
-  run git push origin HEAD
-  run git push origin "$TAG"
-  run gh release create "$TAG" --title "$TAG" --notes-file CHANGELOG.md \
-    "dist/git_calculator-${NEXT}-*.whl" "dist/git_calculator-${NEXT}.tar.gz"
-  exit 0
+  shopt -s nullglob
+  local assets=(dist/"git_calculator-${version}"-*.whl dist/"git-calculator-${version}.tar.gz" dist/"git_calculator-${version}.tar.gz")
+  if [[ ${#assets[@]} -eq 0 ]]; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      assets=("dist/git_calculator-${version}-*.whl" "dist/git_calculator-${version}.tar.gz")
+    else
+      echo "no dist artifacts for ${version}" >&2
+      exit 1
+    fi
+  fi
+
+  if [[ "$commit_bump" -eq 1 ]]; then
+    run git add package.json pyproject.toml CHANGELOG.md .changeset
+    run git commit -m "chore: release ${tag}"
+  fi
+  run git tag -a "$tag" -m "$tag"
+  if [[ "$commit_bump" -eq 1 ]]; then
+    run git push origin HEAD
+  fi
+  run git push origin "$tag"
+
+  local notes_file
+  notes_file="$(mktemp)"
+  trap 'rm -f "$notes_file"' RETURN
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    run gh release create "$tag" --title "$tag" --notes-file CHANGELOG.md "${assets[@]}"
+  else
+    changelog_notes "$version" >"$notes_file"
+    gh release create "$tag" --title "$tag" --notes-file "$notes_file" "${assets[@]}"
+  fi
+}
+
+if [[ "$CURRENT" -eq 1 && ${#CHANGESET_FILES[@]} -gt 0 ]]; then
+  echo "pending changesets exist; omit --current so they can bump the version" >&2
+  exit 1
 fi
 
-if [[ -n "$(git status --porcelain)" ]]; then
+if [[ "$CURRENT" -eq 0 && ${#CHANGESET_FILES[@]} -eq 0 ]]; then
+  echo "no pending changesets." >&2
+  echo "first GitHub Release of the version already on main: scripts/gh-release.sh --current" >&2
+  echo "later bumps: npx changeset (on the PR), merge, then scripts/gh-release.sh" >&2
+  echo "see docs/releasing.md" >&2
+  exit 1
+fi
+
+if [[ "$DRY_RUN" -eq 0 && -n "$(git status --porcelain)" ]]; then
   echo "working tree is not clean" >&2
   exit 1
 fi
 
+if [[ "$CURRENT" -eq 1 ]]; then
+  publish_tag "$(read_current_version)" 0
+  exit 0
+fi
+
+echo "pending changesets: ${#CHANGESET_FILES[@]}"
+echo "current version:    $(read_current_version)"
+echo "next version:       $(preview_next_version)"
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  run npx changeset version
+  publish_tag "$(preview_next_version)" 1
+  exit 0
+fi
+
 npx changeset version
-VERSION="$(sync_pyproject_version)"
-TAG="v${VERSION}"
-
-if git rev-parse "$TAG" >/dev/null 2>&1; then
-  echo "tag already exists: ${TAG}" >&2
-  exit 1
-fi
-
-python3 -m build
-shopt -s nullglob
-ASSETS=(dist/"git_calculator-${VERSION}"-*.whl dist/"git-calculator-${VERSION}.tar.gz" dist/"git_calculator-${VERSION}.tar.gz")
-if [[ ${#ASSETS[@]} -eq 0 ]]; then
-  echo "no dist artifacts for ${VERSION}" >&2
-  exit 1
-fi
-
-NOTES_FILE="$(mktemp)"
-trap 'rm -f "$NOTES_FILE"' EXIT
-changelog_notes "$VERSION" >"$NOTES_FILE"
-
-git add package.json pyproject.toml CHANGELOG.md .changeset
-git commit -m "chore: release ${TAG}"
-git tag -a "$TAG" -m "$TAG"
-git push origin HEAD
-git push origin "$TAG"
-gh release create "$TAG" \
-  --title "$TAG" \
-  --notes-file "$NOTES_FILE" \
-  "${ASSETS[@]}"
+publish_tag "$(sync_pyproject_version)" 1
