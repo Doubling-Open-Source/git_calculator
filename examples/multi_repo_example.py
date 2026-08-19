@@ -166,7 +166,7 @@ def programmatic_example():
     print("""
     from git_calculator.multi_repo_manager import MultiRepoManager
     from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
-    from git_calculator.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+    from git_calculator.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
 
     # Initialize repository manager
     with MultiRepoManager() as repo_manager:

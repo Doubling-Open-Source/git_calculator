@@ -51,7 +51,7 @@ def run_toy_repo():
     import tempfile
     from git_calculator.util.toy_repo import ToyRepoCreator
 
-    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=_repo_root_str)
+    tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=str(REPO_ROOT))
     orig_cwd = os.getcwd()
     try:
         os.chdir(tmp)

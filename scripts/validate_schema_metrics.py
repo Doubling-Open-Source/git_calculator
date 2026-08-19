@@ -123,7 +123,7 @@ def _run_multi_repo_aggregate_validation(
     try:
         if detail_f:
             _detail(f"# started {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
-            _detail(f"# git_calculator_root={_repo_root_str}")
+            _detail(f"# git_calculator_root={REPO_ROOT}")
             _detail(f"# detail_log_path={detail_path}")
             _detail(f"# metric={METRIC_MULTI_REPO_AGGREGATE}")
             _detail(f"# repo_count={n} cwd={orig_cwd}")
@@ -393,7 +393,7 @@ def main() -> int:
     try:
         if detail_f:
             _detail(f"# started {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
-            _detail(f"# git_calculator_root={_repo_root_str}")
+            _detail(f"# git_calculator_root={REPO_ROOT}")
             _detail(f"# detail_log_path={detail_path}")
             _detail(f"# metric={args.metric}")
             _detail(f"# repo_count={n} cwd={orig_cwd}")

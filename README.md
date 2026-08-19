@@ -29,7 +29,7 @@ python
 from git_calculator import git_ir as gir
 from git_calculator.calculators import cycle_time_by_commits_calculator as commit_calc
 from git_calculator.calculators import change_failure_calculator as cfc
-from git_calculator.calculators import chart_generator as cg
+from git_calculator.visualizers import chart_generator as cg
 from git_calculator.calculators import commit_analyzer as ca
 
 # Get the data
@@ -65,7 +65,7 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
 
 5. To generate new charts later without recalculating:
 ```py
-from git_calculator.calculators import chart_generator as cg
+from git_calculator.visualizers import chart_generator as cg
 
 # Load the saved data
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
@@ -221,7 +221,7 @@ To generate modern-looking charts with trendlines for both metrics:
 from git_calculator import git_ir as gir
 from git_calculator.calculators import cycle_time_by_commits_calculator as commit_calc
 from git_calculator.calculators import change_failure_calculator as cfc
-from git_calculator.calculators import chart_generator as cg
+from git_calculator.visualizers import chart_generator as cg
 
 # Get the data
 logs = gir.git_log()
@@ -240,7 +240,7 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
                   save_data=True)
 
 # Later: Load saved data and generate new charts
-from git_calculator.calculators import chart_generator as cg
+from git_calculator.visualizers import chart_generator as cg
 
 # Load the saved data
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
@@ -360,7 +360,7 @@ You can also use the multi-repository functionality programmatically:
 ```python
 from git_calculator.multi_repo_manager import MultiRepoManager
 from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
-from git_calculator.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+from git_calculator.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
 
 # Initialize repository manager
 with MultiRepoManager() as repo_manager:
