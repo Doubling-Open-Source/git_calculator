@@ -9,7 +9,7 @@ description = "Calculate DORA-style metrics from a Git repository on the local f
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "GPL-3.0-or-later" }
-authors = [{ name = "Doubling", email = "saul@doubling.io" }]
+authors = [{ name = "Doubling", email = "info@doubling.io" }]
 dependencies = [
     "numpy>=2.3.1",
     "packaging==23.2",
