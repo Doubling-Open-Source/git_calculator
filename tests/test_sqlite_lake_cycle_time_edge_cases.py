@@ -11,11 +11,11 @@ from datetime import datetime
 
 import pytest
 
-from src.calculators.cycle_time_by_commits_calculator import (
+from git_calculator.calculators.cycle_time_by_commits_calculator import (
     calculate_time_deltas,
     commit_statistics,
 )
-from src.calculators.sqlite_lake import SqliteLake
+from git_calculator.calculators.sqlite_lake import SqliteLake
 from tests.schema_metrics_fixtures import FakeCommit
 
 

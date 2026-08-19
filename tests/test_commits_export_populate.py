@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.commits_export_populate import (
+from git_calculator.calculators.sqlite_lake.commits_export_populate import (
     create_commits_export_db,
     populate_commits_export_from_logs,
 )

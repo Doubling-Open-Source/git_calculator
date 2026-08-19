@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_change_failure_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_change_failure_monthly import (
     CanonicalChangeFailureMonthly,
     compare_change_failure_monthly,
     extract_change_failure_monthly_select,

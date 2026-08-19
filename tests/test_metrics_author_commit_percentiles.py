@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_author_commit_percentiles import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_author_commit_percentiles import (
     CanonicalAuthorCommitPercentile,
     author_commit_percentiles_canonical_from_logs,
     compare_author_commit_percentiles,

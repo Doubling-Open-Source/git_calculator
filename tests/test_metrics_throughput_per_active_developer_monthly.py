@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_monthly import (
     CanonicalThroughputPerActiveDeveloperMonthly,
     compare_throughput_per_active_developer_monthly,
     extract_throughput_per_active_developer_monthly_select,

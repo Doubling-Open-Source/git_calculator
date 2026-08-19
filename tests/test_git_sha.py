@@ -1,4 +1,4 @@
-from src.git_ir import git_sha
+from git_calculator.git_ir import git_sha
 
 
 def test_gitsha_creation():

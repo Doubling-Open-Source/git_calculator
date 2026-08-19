@@ -6,15 +6,15 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
     active_developers_weekly_canonical_from_logs,
     validate_active_developers_weekly_for_logs,
 )
-from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_weekly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_throughput_per_active_developer_weekly import (
     throughput_per_active_developer_weekly_canonical_from_logs,
     validate_throughput_per_active_developer_weekly_for_logs,
 )
-from src.calculators.throughput_calculator import (
+from git_calculator.calculators.throughput_calculator import (
     calculate_active_developers_by_week,
     calculate_throughput_per_active_developer_by_week,
 )

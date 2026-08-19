@@ -8,15 +8,15 @@ import tempfile
 import subprocess
 import os
 
-from src.git_ir import git_log
-from src.util.git_util import get_repo_id
-from src.calculators.cycle_time_by_commits_calculator import (
+from git_calculator.git_ir import git_log
+from git_calculator.util.git_util import get_repo_id
+from git_calculator.calculators.cycle_time_by_commits_calculator import (
     calculate_time_deltas,
     commit_statistics,
     commit_statistics_normalized_by_month,
     cycle_time_between_commits_by_author,
 )
-from src.calculators.sqlite_lake import SqliteLake
+from git_calculator.calculators.sqlite_lake import SqliteLake
 
 
 @pytest.fixture(scope="function")
@@ -29,7 +29,7 @@ def temp_directory():
 
 def test_calculate_time_deltas_parity(temp_directory):
     """calculate_time_deltas and calculate_time_deltas_sql return the same results."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
@@ -51,7 +51,7 @@ def test_calculate_time_deltas_parity(temp_directory):
 
 def test_sqlite_deltas_match_python(temp_directory):
     """Same repo: delta count and sorted (ts, minutes) pairs match."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])
@@ -73,7 +73,7 @@ def test_sqlite_deltas_match_python(temp_directory):
 
 def test_commit_statistics_parity(temp_directory):
     """commit_statistics and commit_statistics_sql return the same results."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22])
@@ -94,7 +94,7 @@ def test_commit_statistics_parity(temp_directory):
 
 def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
     """Fixed-bucket stats from SQLite match commit_statistics() on same data."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22])
@@ -120,7 +120,7 @@ def test_sqlite_fixed_bucket_stats_match_python(temp_directory):
 
 def test_commit_statistics_normalized_by_month_parity(temp_directory):
     """commit_statistics_normalized_by_month and commit_statistics_normalized_by_month_sql return the same results."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author(
@@ -147,7 +147,7 @@ def test_commit_statistics_normalized_by_month_parity(temp_directory):
 
 def test_cycle_time_between_commits_by_author_parity(temp_directory):
     """cycle_time_between_commits_by_author and cycle_time_between_commits_by_author_sql return the same results."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 4, 7, 8, 10, 13, 14, 16, 19, 20, 22])
@@ -169,7 +169,7 @@ def test_cycle_time_between_commits_by_author_parity(temp_directory):
 
 def test_sqlite_by_month_stats_match_python(temp_directory):
     """By-month stats from SQLite match commit_statistics_normalized_by_month() on same data."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author(
@@ -197,7 +197,7 @@ def test_sqlite_by_month_stats_match_python(temp_directory):
 
 def test_sqlite_multi_author_deltas_match_python(temp_directory):
     """Multi-author repo: delta count and values match."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12])

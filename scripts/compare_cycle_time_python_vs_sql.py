@@ -32,19 +32,19 @@ from pathlib import Path
 
 # Run from repo root so src is importable (this script lives in scripts/)
 REPO_ROOT = Path(__file__).resolve().parent.parent
-_repo_root_str = str(REPO_ROOT)
+_repo_root_str = str(REPO_ROOT / "src")
 if _repo_root_str not in sys.path:
     sys.path.insert(0, _repo_root_str)
 
 import pandas as pd
-from src.git_ir import git_log
-from src.calculators.cycle_time_by_commits_calculator import (
+from git_calculator.git_ir import git_log
+from git_calculator.calculators.cycle_time_by_commits_calculator import (
     calculate_time_deltas,
     commit_statistics,
     commit_statistics_normalized_by_month,
 )
-from src.calculators.sqlite_lake import SqliteLake
-from src.util.git_util import get_repo_id
+from git_calculator.calculators.sqlite_lake import SqliteLake
+from git_calculator.util.git_util import get_repo_id
 
 DEFAULT_OUT = "scripts/compare_output"
 STATS_COLS = ["interval_start", "sum", "average", "p75", "std"]
@@ -53,7 +53,7 @@ STATS_COLS = ["interval_start", "sum", "average", "p75", "std"]
 def run_toy_repo():
     """Create a small toy repo and return (logs, cwd_restore). Caller restores cwd."""
     import tempfile
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     tmp = tempfile.mkdtemp(prefix="compare_cycle_", dir=_repo_root_str)
     orig_cwd = os.getcwd()

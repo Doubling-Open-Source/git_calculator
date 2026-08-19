@@ -2,9 +2,9 @@ import pytest
 import tempfile
 import logging
 import subprocess
-from src.util.toy_repo import ToyRepoCreator
-from src.git_ir import all_objects, git_log
-from src.util.git_util import git_run
+from git_calculator.util.toy_repo import ToyRepoCreator
+from git_calculator.git_ir import all_objects, git_log
+from git_calculator.util.git_util import git_run
 
 
 @pytest.fixture(scope="function")

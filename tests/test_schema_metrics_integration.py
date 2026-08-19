@@ -5,21 +5,21 @@ from __future__ import annotations
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from src.calculators.sqlite_lake.commits_export_populate import (
+from git_calculator.calculators.sqlite_lake.commits_export_populate import (
     create_commits_export_db,
     populate_commits_export_from_logs,
 )
-from src.calculators.sqlite_lake.schema_metrics import METRIC_ALL, validate_schema_metrics_for_logs
-from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics import METRIC_ALL, validate_schema_metrics_for_logs
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_active_developers_monthly import (
     active_developers_monthly_canonical_from_logs,
 )
-from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly import (
     validate_cycle_time_monthly_for_logs,
 )
-from src.calculators.sqlite_lake.schema_metrics.metrics_throughput_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_throughput_monthly import (
     throughput_monthly_canonical_from_logs,
 )
-from src.util.git_util import CommitMessagesBatch
+from git_calculator.util.git_util import CommitMessagesBatch
 
 from tests.schema_metrics_fixtures import FakeCommit
 
@@ -63,7 +63,7 @@ def test_all_metrics_match_python_single_author_synthetic():
     assert sum(r.commit_count for r in tpm) == 12
 
     with patch(
-        "src.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
+        "git_calculator.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
         return_value=batch,
     ):
         err = validate_schema_metrics_for_logs(

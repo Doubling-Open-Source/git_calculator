@@ -5,7 +5,7 @@ from __future__ import annotations
 import sqlite3
 from typing import Any, Dict, List, Optional
 
-from src.calculators.sqlite_lake.commits_export_populate import (
+from git_calculator.calculators.sqlite_lake.commits_export_populate import (
     CommitMessagesBatch,
     create_commits_export_db,
     populate_commits_export_from_logs,

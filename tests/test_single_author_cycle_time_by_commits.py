@@ -2,13 +2,13 @@ import pytest
 import tempfile
 import logging
 import subprocess
-from src.util.toy_repo import ToyRepoCreator
-from src.calculators.cycle_time_by_commits_calculator import (
+from git_calculator.util.toy_repo import ToyRepoCreator
+from git_calculator.calculators.cycle_time_by_commits_calculator import (
     commit_statistics,
     calculate_time_deltas,
 )
-from src.git_ir import git_log
-from src.util.date_util import expected_for_comparison
+from git_calculator.git_ir import git_log
+from git_calculator.util.date_util import expected_for_comparison
 
 
 @pytest.fixture(scope="function")

@@ -6,7 +6,7 @@ import time
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly import (
     CanonicalCycleTimeMonthly,
     commit_statistics_normalized_by_month_sql_localtime,
     compare_canonical_cycle_time_monthly,
@@ -16,7 +16,7 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_monthly impor
     time_deltas_sql_aligned_minutes,
     validate_cycle_time_monthly_for_logs,
 )
-from src.util.git_util import CommitMessagesBatch
+from git_calculator.util.git_util import CommitMessagesBatch
 
 from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs, message_batch_subject_body
 
@@ -111,7 +111,7 @@ def test_synthetic_git_log_end_to_end_matches_sql():
     logs, batch = _multi_day_logs_and_batch()
     repo_slug = "local:metrics_ctm_e2e"
     with patch(
-        "src.calculators.sqlite_lake.commits_export_populate.git_log_commit_messages_batch",
+        "git_calculator.calculators.sqlite_lake.commits_export_populate.git_log_commit_messages_batch",
         return_value=batch,
     ):
         err = validate_cycle_time_monthly_for_logs(logs, repo_slug)

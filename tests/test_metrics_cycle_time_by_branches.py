@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_by_branches import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_by_branches import (
     CanonicalBranchLine,
     compare_branch_lines,
     extract_cycle_time_by_branches_select,

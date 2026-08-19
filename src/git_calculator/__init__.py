@@ -1,0 +1,1 @@
+"""git-calculator Python package."""

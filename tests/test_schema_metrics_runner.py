@@ -3,14 +3,14 @@
 import time
 from unittest.mock import patch
 
-from src.calculators.sqlite_lake.schema_metrics import validate_schema_metrics_for_logs
-from src.calculators.sqlite_lake.schema_metrics.constants import (
+from git_calculator.calculators.sqlite_lake.schema_metrics import validate_schema_metrics_for_logs
+from git_calculator.calculators.sqlite_lake.schema_metrics.constants import (
     ALL_METRICS,
     METRIC_ALL,
     METRIC_CYCLE_TIME_BY_BRANCHES,
     OPT_IN_METRICS,
 )
-from src.calculators.sqlite_lake.schema_metrics import runner as schema_metrics_runner
+from git_calculator.calculators.sqlite_lake.schema_metrics import runner as schema_metrics_runner
 from tests.schema_metrics_fixtures import FakeCommit, message_batch_subject_body
 
 
@@ -46,7 +46,7 @@ def test_metric_all_succeeds_without_parent_edges():
     ]
     batch = message_batch_subject_body(logs, "chore", "")
     with patch(
-        "src.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
+        "git_calculator.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
         return_value=batch,
     ):
         err = validate_schema_metrics_for_logs(
@@ -60,7 +60,7 @@ def test_explicit_cycle_time_by_branches_errors_without_parent_edges():
     logs = [FakeCommit("c" * 40, t, "a@x")]
     batch = message_batch_subject_body(logs, "s", "")
     with patch(
-        "src.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
+        "git_calculator.calculators.sqlite_lake.schema_metrics.runner.git_log_commit_messages_batch",
         return_value=batch,
     ):
         err = validate_schema_metrics_for_logs(

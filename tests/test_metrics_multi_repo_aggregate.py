@@ -7,10 +7,10 @@ import os
 import sqlite3
 import tempfile
 
-from src.calculators.multi_repo_calculator import MultiRepoCalculator
-from src.multi_repo_manager import MultiRepoManager
+from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
+from git_calculator.multi_repo_manager import MultiRepoManager
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_multi_repo_aggregate import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_multi_repo_aggregate import (
     materialize_metrics_multi_repo_aggregate,
     multi_repo_aggregate_materialization_rows,
     read_metrics_multi_repo_aggregate_rows,
@@ -18,7 +18,7 @@ from src.calculators.sqlite_lake.schema_metrics.metrics_multi_repo_aggregate imp
     validate_multi_repo_aggregate_for_local_repo_paths,
     validate_multi_repo_aggregate_for_metrics_dict,
 )
-from src.util.toy_repo import ToyRepoCreator
+from git_calculator.util.toy_repo import ToyRepoCreator
 
 
 def _minimal_two_repo_metrics() -> dict:
