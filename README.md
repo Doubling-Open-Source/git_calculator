@@ -15,7 +15,7 @@ Or with uv:
 uv tool install git+https://github.com/Doubling-Open-Source/git_calculator.git
 ```
 
-Then run `git-calculator --help`, for example `git-calculator single /path/to/repo`.
+Then run `git-calculator --help`, for example `git-calculator single /path/to/repo`. Squash-merge repos: `git-calculator single /path/to/repo --work-style squash` ([choose work style](docs/client/choose-work-style.md)).
 
 1. First, clone this repository and set it up:
 ```sh
@@ -210,7 +210,7 @@ Month,Change Failure Rate (%)
 2023-11,33.3
 ```
 
-The change failure rate is calculated by identifying commits that contain keywords like "revert", "hotfix", "bugfix", "bug", "fix", "problem", or "issue" in their commit messages. The rate is expressed as a percentage of total commits that required fixes.
+The change failure rate is calculated by identifying commits that contain keywords like "revert", "hotfix", "bugfix", "bug", "fix", "problem", or "issue" in their commit messages. The rate is expressed as a percentage of total commits that required fixes. Under `--work-style squash`, only the [commit summary](docs/glossary/commit-summary.md) is searched; see [choose work style](docs/client/choose-work-style.md).
 
 To analyze commit trends by author:
 ```py
@@ -307,6 +307,9 @@ git-calculator single /path/to/repo
 
 # Specify custom output directory
 git-calculator single /path/to/repo --output my_analysis
+
+# Squash-merge workflow (default branch only; change-failure uses the summary)
+git-calculator single /path/to/repo --work-style squash
 ```
 
 ### Multiple Repository Analysis

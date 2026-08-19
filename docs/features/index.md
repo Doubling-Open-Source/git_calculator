@@ -5,3 +5,4 @@ How git-calculator capabilities work — contracts and acceptance, not implement
 ## Sections
 
 - [Product](product.md)
+- [Work style](work-style.md)
