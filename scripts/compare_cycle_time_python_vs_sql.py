@@ -30,11 +30,7 @@ import os
 import sys
 from pathlib import Path
 
-# Run from repo root so src is importable (this script lives in scripts/)
 REPO_ROOT = Path(__file__).resolve().parent.parent
-_repo_root_str = str(REPO_ROOT / "src")
-if _repo_root_str not in sys.path:
-    sys.path.insert(0, _repo_root_str)
 
 import pandas as pd
 from git_calculator.git_ir import git_log

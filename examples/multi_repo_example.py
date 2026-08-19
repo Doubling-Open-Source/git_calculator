@@ -6,12 +6,8 @@ This example demonstrates how to use the git-calculator's multi-repository
 functionality to analyze and compare DORA metrics across multiple repositories.
 """
 
-import os
-import sys
 import json
-
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+import os
 
 from git_calculator.multi_repo_manager import MultiRepoManager
 from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator

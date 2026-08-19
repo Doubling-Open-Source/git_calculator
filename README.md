@@ -12,10 +12,7 @@ cd git-calculator
 # Set up Python environment
 python -m venv venv
 source venv/bin/activate  # On Windows, use: venv\Scripts\activate
-pip install -r requirements.txt
-
-# Set Python path
-export PYTHONPATH=$(pwd)  # On Windows, use: set PYTHONPATH=%cd%
+pip install -e ".[dev]"
 ```
 
 2. Navigate to the Git repository you want to analyze:
@@ -29,11 +26,11 @@ cd /path/to/your/repository
 python
 
 # Import required modules
-from src import git_ir as gir
-from src.calculators import cycle_time_by_commits_calculator as commit_calc
-from src.calculators import change_failure_calculator as cfc
-from src.calculators import chart_generator as cg
-from src.calculators import commit_analyzer as ca
+from git_calculator import git_ir as gir
+from git_calculator.calculators import cycle_time_by_commits_calculator as commit_calc
+from git_calculator.calculators import change_failure_calculator as cfc
+from git_calculator.calculators import chart_generator as cg
+from git_calculator.calculators import commit_analyzer as ca
 
 # Get the data
 logs = gir.git_log()
@@ -68,7 +65,7 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
 
 5. To generate new charts later without recalculating:
 ```py
-from src.calculators import chart_generator as cg
+from git_calculator.calculators import chart_generator as cg
 
 # Load the saved data
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
@@ -99,23 +96,16 @@ git-calculator/
 │   └── test_*.py        # Unit tests
 │
 ├── README.md             # Documentation
-├── requirements.txt      # Dependencies
-└── setup.py              # Setup
+├── pyproject.toml        # Package metadata and dependencies
 ```
 
 # Project Setup
 
 ```
 cd git-calculator
-export PYTHONPATH=$(pwd)
-```
-
-Set up virtual environment:
-
-```
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 # Project Testing
@@ -134,7 +124,7 @@ To play around with the interpreter:
 ```
 python
 import tempfile
-from src.util.toy_repo import ToyRepoCreator
+from git_calculator.util.toy_repo import ToyRepoCreator
 trc = ToyRepoCreator(tempfile.mkdtemp())
 even_intervals = [7 * i for i in range(12)]  # Weekly intervals
 trc.create_custom_commits(even_intervals)
@@ -142,7 +132,7 @@ trc.create_custom_commits(even_intervals)
 (Or pass any empty directory path you control, e.g. a folder under this repo.)
 
 ```
-from src.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
+from git_calculator.calculators.cycle_time_by_commits_calculator import cycle_time_between_commits_by_author
 result = cycle_time_between_commits_by_author(None, bucket_size=4, window_size=2)
 print(result)
 ```
@@ -156,15 +146,9 @@ Step one, go to this repo in the terminal and set the python path:
 
 ```sh
 cd git_calculator
-export PYTHONPATH=$(pwd)
-```
-
-Set up virtual environment:
-
-```
 python -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt
+pip install -e ".[dev]"
 ```
 
 Finally, go to the git repo you want to analyze:
@@ -177,8 +161,8 @@ Analyze:
 # Launch python3
 python
 # Paste:
-from src import git_ir as gir
-from src.calculators import cycle_time_by_commits_calculator as commit_calc
+from git_calculator import git_ir as gir
+from git_calculator.calculators import cycle_time_by_commits_calculator as commit_calc
 logs = gir.git_log()
 tds = commit_calc.calculate_time_deltas(logs)
 result = commit_calc.commit_statistics_normalized_by_month(tds)
@@ -197,8 +181,8 @@ To calculate change failure rate:
 # Launch python3
 python
 # Paste:
-from src import git_ir as gir
-from src.calculators import change_failure_calculator as cfc
+from git_calculator import git_ir as gir
+from git_calculator.calculators import change_failure_calculator as cfc
 logs = gir.git_log()
 data_by_month = cfc.extract_commit_data(logs)
 change_failure_rates = cfc.calculate_change_failure_rate(data_by_month)
@@ -219,7 +203,7 @@ To analyze commit trends by author:
 # Launch python3
 python
 # Paste:
-from src.calculators import commit_analyzer as ca
+from git_calculator.calculators import commit_analyzer as ca
 ca.analyze_commits()
 ```
 
@@ -234,10 +218,10 @@ To generate modern-looking charts with trendlines for both metrics:
 
 ```py
 # First time: Calculate and save the data
-from src import git_ir as gir
-from src.calculators import cycle_time_by_commits_calculator as commit_calc
-from src.calculators import change_failure_calculator as cfc
-from src.calculators import chart_generator as cg
+from git_calculator import git_ir as gir
+from git_calculator.calculators import cycle_time_by_commits_calculator as commit_calc
+from git_calculator.calculators import change_failure_calculator as cfc
+from git_calculator.calculators import chart_generator as cg
 
 # Get the data
 logs = gir.git_log()
@@ -256,7 +240,7 @@ cg.generate_charts(cycle_time_data=cycle_time_data,
                   save_data=True)
 
 # Later: Load saved data and generate new charts
-from src.calculators import chart_generator as cg
+from git_calculator.calculators import chart_generator as cg
 
 # Load the saved data
 cycle_time_data, failure_rate_data = cg.load_metrics_data()
@@ -305,10 +289,10 @@ The easiest way to use multi-repository analysis is through the command-line int
 
 ```bash
 # Analyze a single repository
-python -m src.cli single /path/to/repo
+git-calculator single /path/to/repo
 
 # Specify custom output directory
-python -m src.cli single /path/to/repo --output my_analysis
+git-calculator single /path/to/repo --output my_analysis
 ```
 
 ### Multiple Repository Analysis
@@ -317,7 +301,7 @@ python -m src.cli single /path/to/repo --output my_analysis
 
 ```bash
 # Create a sample configuration file
-python -m src.cli config --create-sample
+git-calculator config --create-sample
 ```
 
 This creates a `repo_config.json` file with the following structure:
@@ -350,13 +334,13 @@ This creates a `repo_config.json` file with the following structure:
 
 ```bash
 # Analyze repositories from config file
-python -m src.cli multi --config repo_config.json
+git-calculator multi --config repo_config.json
 
 # Update repositories before analysis
-python -m src.cli multi --config repo_config.json --update
+git-calculator multi --config repo_config.json --update
 
 # Specify custom output directory
-python -m src.cli multi --config repo_config.json --output team_analysis
+git-calculator multi --config repo_config.json --output team_analysis
 ```
 
 ### Configuration Options
@@ -374,9 +358,9 @@ The repository configuration supports:
 You can also use the multi-repository functionality programmatically:
 
 ```python
-from src.multi_repo_manager import MultiRepoManager
-from src.calculators.multi_repo_calculator import MultiRepoCalculator
-from src.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+from git_calculator.multi_repo_manager import MultiRepoManager
+from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
+from git_calculator.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
 
 # Initialize repository manager
 with MultiRepoManager() as repo_manager:
@@ -526,7 +510,7 @@ Multi-repository analysis is particularly useful for:
 
 ```bash
 # Enable verbose logging
-python -m src.cli multi --config repo_config.json --verbose
+git-calculator multi --config repo_config.json --verbose
 ```
 
 ### Error Handling

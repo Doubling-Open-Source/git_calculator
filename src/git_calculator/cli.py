@@ -260,19 +260,19 @@ def main():
         epilog="""
 Examples:
   # Analyze a single repository
-  python -m src.cli single /path/to/repo
+  git-calculator single /path/to/repo
 
   # Single repo with SQL backend (compare charts: <repo>_cycle_time_chart.png vs <repo>_sql_cycle_time_chart.png)
-  python -m src.cli single /path/to/repo --output my_analysis --backend sql
+  git-calculator single /path/to/repo --output my_analysis --backend sql
 
   # Analyze multiple repositories from config file
-  python -m src.cli multi --config repo_config.json
+  git-calculator multi --config repo_config.json
 
   # Create a sample configuration file
-  python -m src.cli config --create-sample
+  git-calculator config --create-sample
 
   # Analyze multiple repositories with updates
-  python -m src.cli multi --config repo_config.json --update
+  git-calculator multi --config repo_config.json --update
         """,
     )
 

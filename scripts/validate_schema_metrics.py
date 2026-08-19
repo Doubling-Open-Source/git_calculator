@@ -52,10 +52,6 @@ def _new_detail_log_path() -> str:
 
 _AUTO_DETAIL_LOG = object()
 
-_repo_root_str = str(REPO_ROOT / "src")
-if _repo_root_str not in sys.path:
-    sys.path.insert(0, _repo_root_str)
-
 from git_calculator.git_ir import git_log
 from git_calculator.util.git_util import get_repo_id
 from git_calculator.calculators.sqlite_lake.schema_metrics import (
