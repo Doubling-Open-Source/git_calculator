@@ -1,6 +1,6 @@
 # Changesets
 
-This repo uses [changesets](https://github.com/changesets/changesets) only to record the **PEP 440** bump (`patch` / `minor` / `major`). Canonical version is `[project].version` in `pyproject.toml`. `package.json` exists so the Changesets CLI can run; release tooling copies that version into `pyproject.toml`.
+This repo uses [changesets](https://github.com/changesets/changesets) only to record the **PEP 440** bump (`patch` / `minor` / `major`). `package.json` exists so the Changesets CLI can run (`changeset version` writes the new version there). Release tooling then copies that `package.json` version into `pyproject.toml`. Python packaging and runtime treat `[project].version` in `pyproject.toml` as the published version.
 
 Release notes are [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) in `CHANGELOG.md` (`Added` / `Changed` / `Deprecated` / `Removed` / `Fixed` / `Security`). After `changeset version`, `scripts/format_changelog.py` rewrites Changesets' Major/Minor/Patch headings to those sections and dates the release as `## [X.Y.Z] - YYYY-MM-DD`.
 

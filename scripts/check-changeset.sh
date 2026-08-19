@@ -13,7 +13,7 @@ if ! echo "$CHANGED" | grep -Eq '^(src/|pyproject\.toml$)'; then
   exit 0
 fi
 
-if echo "$CHANGED" | grep -E '^\.changeset/.+\.md$' | grep -v 'README.md' | grep -q .; then
+if echo "$CHANGED" | grep -E '^\.changeset/.+\.md$' | grep -v '^\.changeset/README\.md$' | grep -q .; then
   exit 0
 fi
 

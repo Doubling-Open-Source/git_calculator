@@ -8,6 +8,7 @@ _SPEC = importlib.util.spec_from_file_location(
     "format_changelog",
     Path(__file__).resolve().parents[1] / "scripts" / "format_changelog.py",
 )
+assert _SPEC is not None
 _mod = importlib.util.module_from_spec(_SPEC)
 assert _SPEC.loader is not None
 _SPEC.loader.exec_module(_mod)
