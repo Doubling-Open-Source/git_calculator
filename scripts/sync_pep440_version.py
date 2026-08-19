@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Copy the Changesets package.json version into pyproject.toml (PEP 440 source of truth)."""
+"""Sync pyproject.toml to the version Changesets wrote in package.json."""
 
 from __future__ import annotations
 
