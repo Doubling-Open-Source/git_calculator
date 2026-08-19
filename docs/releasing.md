@@ -1,18 +1,20 @@
 # Releasing
 
-This repo versions with [changesets](https://github.com/changesets/changesets) (`patch` / `minor` / `major`). How to add a changeset: `docs/changesets.md` (separate integration PR if that file is not on `main` yet).
+This repo versions with [changesets](https://github.com/changesets/changesets) (`patch` / `minor` / `major`). How to add a changeset: `docs/changesets.md`.
 
-## Bootstrap (once)
+## First GitHub Release
 
-1. Install the CLI (from repo root): `npm install`
-2. Publish the version **already** on `main` (`2.0.0` today). There is nothing to bump yet, so do **not** add a changeset:
+`main` is at **2.0.0** in `pyproject.toml` and already has a pending **patch** changeset (Keep a Changelog / Changesets). `--current` refuses to run while any `.changeset/*.md` (other than README) is pending, so do **not** use `--current` for this first publish.
 
 ```
-scripts/gh-release.sh --current --dry-run
-scripts/gh-release.sh --current
+npm install
+scripts/gh-release.sh --dry-run
+scripts/gh-release.sh
 ```
 
-That tags `v2.0.0` and creates the GitHub Release from the existing `CHANGELOG.md` / `pyproject.toml` version.
+That applies the pending patch, publishes **2.0.1**, tags `v2.0.1`, and creates the GitHub Release.
+
+`--current` is only for tagging the version already in `pyproject.toml` when there are **no** pending changesets.
 
 ## Later releases
 
