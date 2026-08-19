@@ -2,6 +2,9 @@
   "name": "git-calculator",
   "version": "2.0.0",
   "private": true,
+  "scripts": {
+    "changeset:version": "changeset version && python3 scripts/format_changelog.py && python3 scripts/sync_pep440_version.py"
+  },
   "devDependencies": {
     "@changesets/cli": "^2.29.8"
   }
