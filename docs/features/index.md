@@ -6,3 +6,4 @@ How git-calculator capabilities work — contracts and acceptance, not implement
 
 - [Product](product.md)
 - [Work style](work-style.md)
+- [Window and grain](window-and-grain.md)

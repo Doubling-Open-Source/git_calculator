@@ -6,3 +6,4 @@ How to get DORA-style metrics from a local clone.
 
 - [About this guide](about-this-guide.md)
 - [Choose work style](choose-work-style.md)
+- [Choose window and grain](choose-window-and-grain.md)
