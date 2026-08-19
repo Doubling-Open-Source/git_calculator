@@ -23,9 +23,13 @@ from tests.schema_metrics_fixtures import FakeCommit, fresh_db_with_logs
 
 @pytest.fixture
 def temp_directory():
+    orig_cwd = os.getcwd()
     temp_dir = tempfile.mkdtemp()
-    yield temp_dir
-    subprocess.run(["rm", "-rf", temp_dir], check=False)
+    try:
+        yield temp_dir
+    finally:
+        os.chdir(orig_cwd)
+        subprocess.run(["rm", "-rf", temp_dir], check=False)
 
 
 def _commit(path, message, date):
@@ -100,10 +104,14 @@ def test_squash_omits_topic_only_commits(temp_directory):
 def test_unknown_work_style_cli_fails_closed():
     from git_calculator.cli import main
 
-    with pytest.raises(SystemExit) as caught:
+    orig_argv = sys.argv[:]
+    try:
         sys.argv = ["git-calculator", "single", ".", "--work-style", "nope"]
-        main()
-    assert caught.value.code != 0
+        with pytest.raises(SystemExit) as caught:
+            main()
+        assert caught.value.code != 0
+    finally:
+        sys.argv = orig_argv
 
 
 def test_schema_squash_parity_subject_only():
