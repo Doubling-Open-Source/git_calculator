@@ -334,7 +334,7 @@ def all_objects():
     """
 
 
-def git_log(work_style: str = "all-branches"):
+def git_log(work_style: str = "all-branches", default_branch=None):
     def to_obj(line):
         parts = line.split("|", 5)
         parts[3] = parts[3].split()  # Multiple parents
@@ -346,7 +346,7 @@ def git_log(work_style: str = "all-branches"):
         to_obj(line)
         for line in git_run(
             "log",
-            *log_revision_args(work_style),
+            *log_revision_args(work_style, default_branch=default_branch),
             r"--format=%ct|%H|%T|%P|%ae|%an",
         ).stdout.splitlines()
     ]

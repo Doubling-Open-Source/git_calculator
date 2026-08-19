@@ -15,7 +15,7 @@ Or with uv:
 uv tool install git+https://github.com/Doubling-Open-Source/git_calculator.git
 ```
 
-Then run `git-calculator --help`, for example `git-calculator single /path/to/repo`. Squash-merge repos: `git-calculator single /path/to/repo --work-style squash` ([choose work style](docs/client/choose-work-style.md)).
+Then run `git-calculator --help`, for example `git-calculator single /path/to/repo`. Squash-merge repos: `git-calculator single /path/to/repo --work-style squash` ([choose work style](docs/client/choose-work-style.md)). Bounded UTC series: `--from` / `--to` with `--grain weekly|monthly` and `--backend sql` ([choose window and grain](docs/client/choose-window-and-grain.md)).
 
 1. First, clone this repository and set it up:
 ```sh
@@ -310,6 +310,14 @@ git-calculator single /path/to/repo --output my_analysis
 
 # Squash-merge workflow (default branch only; change-failure uses the summary)
 git-calculator single /path/to/repo --work-style squash
+
+# UTC window at weekly grain (SQL lake)
+git-calculator single /path/to/repo \
+  --from 2026-06-22T00:00:00Z \
+  --to 2026-08-17T00:00:00Z \
+  --grain weekly \
+  --backend sql \
+  --work-style squash
 ```
 
 ### Multiple Repository Analysis
