@@ -1,0 +1,8 @@
+{
+  "name": "git-calculator",
+  "version": "2.0.0",
+  "private": true,
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
+  }
+}

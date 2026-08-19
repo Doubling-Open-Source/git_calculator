@@ -118,17 +118,6 @@ pytest -v
 For debugging:
 ```export PYTEST_ADDOPTS="--log-cli-level=DEBUG"```
 
-# Releasing
-
-From a clean checkout of `main`, after bumping `version` in `pyproject.toml` and adding a `## x.y.z` section in `CHANGELOG.md`:
-
-```
-scripts/gh-release.sh --dry-run
-scripts/gh-release.sh
-```
-
-This tags `v<version>`, pushes the tag, and creates a GitHub Release with sdist/wheel assets (`gh` must be authenticated).
-
 # Project Playing Around
 
 To play around with the interpreter:
