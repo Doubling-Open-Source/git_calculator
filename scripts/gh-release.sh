@@ -91,43 +91,24 @@ print(f"{major}.{minor}.{patch}")
 PY
 }
 
-sync_pyproject_version() {
-  python3 - <<'PY'
-import json
-import re
-from pathlib import Path
-
-version = json.loads(Path("package.json").read_text())["version"]
-path = Path("pyproject.toml")
-text = path.read_text()
-updated, n = re.subn(
-    r'(?m)^version = "[^"]+"',
-    f'version = "{version}"',
-    text,
-    count=1,
-)
-if n != 1:
-    raise SystemExit("could not update pyproject.toml version")
-path.write_text(updated)
-print(version)
-PY
-}
-
 changelog_notes() {
   VERSION="$1" python3 - <<'PY'
 import os
+import re
 from pathlib import Path
 
 version = os.environ["VERSION"]
-heading = f"## {version}"
 path = Path("CHANGELOG.md")
 if not path.is_file():
     print(f"Release {version}")
     raise SystemExit(0)
+heading = re.compile(
+    rf"^## \[?{re.escape(version)}\]?(?:\s+-\s+\d{{4}}-\d{{2}}-\d{{2}})?\s*$"
+)
 lines = path.read_text().splitlines()
 start = None
 for i, line in enumerate(lines):
-    if line.strip() == heading:
+    if heading.match(line.strip()):
         start = i + 1
         break
 if start is None:
@@ -230,9 +211,13 @@ echo "next version:       $(preview_next_version)"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   run npx changeset version
+  run python3 scripts/format_changelog.py
+  run python3 scripts/sync_pep440_version.py
   publish_tag "$(preview_next_version)" 1
   exit 0
 fi
 
 npx changeset version
-publish_tag "$(sync_pyproject_version)" 1
+python3 scripts/format_changelog.py
+python3 scripts/sync_pep440_version.py
+publish_tag "$(read_current_version)" 1
