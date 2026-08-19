@@ -3,6 +3,20 @@ Calculate dora metrics and related from a Git repository on the local file syste
 
 # Getting Started
 
+Install as a CLI (Python 3.11+):
+
+```sh
+pipx install git+https://github.com/Doubling-Open-Source/git_calculator.git
+```
+
+Or with uv:
+
+```sh
+uv tool install git+https://github.com/Doubling-Open-Source/git_calculator.git
+```
+
+Then run `git-calculator --help`, for example `git-calculator single /path/to/repo`.
+
 1. First, clone this repository and set it up:
 ```sh
 # Clone the repository
