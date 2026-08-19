@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Apply pending changesets (or publish the current version), then tag and create a GitHub Release.
+# Re-running is safe: if the GitHub Release is missing, the vX.Y.Z tag is moved to HEAD and reused.
 # Usage: scripts/gh-release.sh [--dry-run] [--current]
 set -euo pipefail
 
@@ -142,6 +143,59 @@ ensure_changeset_cli() {
   fi
 }
 
+venv_python() {
+  echo "$ROOT/.venv/bin/python"
+}
+
+ensure_python_build() {
+  local py
+  py="$(venv_python)"
+  if [[ ! -x "$py" ]]; then
+    echo "creating .venv for python -m build" >&2
+    python3 -m venv "$ROOT/.venv"
+  fi
+  if ! "$py" -c "import build" >/dev/null 2>&1; then
+    echo "installing build into .venv" >&2
+    "$ROOT/.venv/bin/pip" install -q build
+  fi
+}
+
+github_release_exists() {
+  gh release view "$1" >/dev/null 2>&1
+}
+
+only_release_paths_changed() {
+  git status --porcelain | python3 - <<'PY'
+import sys
+
+allowed_prefixes = (".changeset/",)
+allowed_exact = {
+    "package.json",
+    "pyproject.toml",
+    "CHANGELOG.md",
+}
+for raw in sys.stdin:
+    path = raw[3:].strip()
+    if " -> " in path:
+        path = path.split(" -> ", 1)[1]
+    if path in allowed_exact or path.startswith(allowed_prefixes):
+        continue
+    sys.exit(1)
+sys.exit(0)
+PY
+}
+
+assert_tree_ok() {
+  if [[ -z "$(git status --porcelain)" ]]; then
+    return 0
+  fi
+  if ! only_release_paths_changed; then
+    echo "working tree has non-release changes" >&2
+    git status --porcelain >&2
+    exit 1
+  fi
+}
+
 run() {
   if [[ "$DRY_RUN" -eq 1 ]]; then
     printf '+'
@@ -152,22 +206,25 @@ run() {
   fi
 }
 
+place_tag() {
+  local tag="$1"
+  run git tag -f -a "$tag" -m "$tag"
+  run git push --force origin "refs/tags/${tag}"
+}
+
 publish_tag() {
   local version="$1"
   local tag="v${version}"
-  local commit_bump="$2"
-
-  if [[ "$DRY_RUN" -eq 0 ]]; then
-    if git rev-parse "$tag" >/dev/null 2>&1; then
-      echo "tag already exists: ${tag}" >&2
-      exit 1
-    fi
-  fi
 
   echo "version: ${version}"
   echo "tag:     ${tag}"
 
-  run python3 -m build
+  if github_release_exists "$tag"; then
+    echo "GitHub Release ${tag} already exists; nothing to do"
+    exit 0
+  fi
+
+  run "$(venv_python)" -m build
   shopt -s nullglob
   local assets=(dist/"git_calculator-${version}"-*.whl dist/"git-calculator-${version}.tar.gz" dist/"git_calculator-${version}.tar.gz")
   if [[ ${#assets[@]} -eq 0 ]]; then
@@ -179,15 +236,16 @@ publish_tag() {
     fi
   fi
 
-  if [[ "$commit_bump" -eq 1 ]]; then
+  if [[ -n "$(git status --porcelain)" ]]; then
     run git add package.json pyproject.toml CHANGELOG.md .changeset
     run git commit -m "chore: release ${tag}"
   fi
-  run git tag -a "$tag" -m "$tag"
-  if [[ "$commit_bump" -eq 1 ]]; then
-    run git push origin HEAD
+
+  if git rev-parse "$tag" >/dev/null 2>&1; then
+    echo "moving unpublished tag ${tag} to $(git rev-parse --short HEAD)"
   fi
-  run git push origin "$tag"
+  run git push origin HEAD
+  place_tag "$tag"
 
   local notes_file
   notes_file="$(mktemp)"
@@ -205,38 +263,24 @@ if [[ "$CURRENT" -eq 1 && ${#CHANGESET_FILES[@]} -gt 0 ]]; then
   exit 1
 fi
 
-if [[ "$CURRENT" -eq 0 && ${#CHANGESET_FILES[@]} -eq 0 ]]; then
-  echo "no pending changesets." >&2
-  echo "first GitHub Release of the version already on main: scripts/gh-release.sh --current" >&2
-  echo "later bumps: npx changeset (on the PR), merge, then scripts/gh-release.sh" >&2
-  echo "see docs/releasing.md" >&2
-  exit 1
+ensure_python_build
+assert_tree_ok
+
+if [[ "$CURRENT" -eq 0 && ${#CHANGESET_FILES[@]} -gt 0 ]]; then
+  ensure_changeset_cli
+  echo "pending changesets: ${#CHANGESET_FILES[@]}"
+  echo "current version:    $(read_current_version)"
+  echo "next version:       $(preview_next_version)"
+  if [[ "$DRY_RUN" -eq 1 ]]; then
+    run "$(changeset_bin)" version
+    run python3 scripts/format_changelog.py
+    run python3 scripts/sync_pep440_version.py
+    publish_tag "$(preview_next_version)"
+    exit 0
+  fi
+  "$(changeset_bin)" version
+  python3 scripts/format_changelog.py
+  python3 scripts/sync_pep440_version.py
 fi
 
-if [[ "$DRY_RUN" -eq 0 && -n "$(git status --porcelain)" ]]; then
-  echo "working tree is not clean" >&2
-  exit 1
-fi
-
-if [[ "$CURRENT" -eq 1 ]]; then
-  publish_tag "$(read_current_version)" 0
-  exit 0
-fi
-
-ensure_changeset_cli
-echo "pending changesets: ${#CHANGESET_FILES[@]}"
-echo "current version:    $(read_current_version)"
-echo "next version:       $(preview_next_version)"
-
-if [[ "$DRY_RUN" -eq 1 ]]; then
-  run "$(changeset_bin)" version
-  run python3 scripts/format_changelog.py
-  run python3 scripts/sync_pep440_version.py
-  publish_tag "$(preview_next_version)" 1
-  exit 0
-fi
-
-"$(changeset_bin)" version
-python3 scripts/format_changelog.py
-python3 scripts/sync_pep440_version.py
-publish_tag "$(read_current_version)" 1
+publish_tag "$(read_current_version)"
