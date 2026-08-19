@@ -2,13 +2,13 @@ import pytest
 import tempfile
 import logging
 import subprocess
-from src.util.toy_repo import ToyRepoCreator
-from src.calculators.change_failure_calculator import (
+from git_calculator.util.toy_repo import ToyRepoCreator
+from git_calculator.calculators.change_failure_calculator import (
     extract_commit_data,
     calculate_change_failure_rate,
 )
-from src.git_ir import git_log
-from src.util.date_util import normalize_date
+from git_calculator.git_ir import git_log
+from git_calculator.util.date_util import normalize_date
 
 
 @pytest.fixture(scope="function")

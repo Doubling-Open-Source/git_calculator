@@ -52,13 +52,9 @@ def _new_detail_log_path() -> str:
 
 _AUTO_DETAIL_LOG = object()
 
-_repo_root_str = str(REPO_ROOT)
-if _repo_root_str not in sys.path:
-    sys.path.insert(0, _repo_root_str)
-
-from src.git_ir import git_log
-from src.util.git_util import get_repo_id
-from src.calculators.sqlite_lake.schema_metrics import (
+from git_calculator.git_ir import git_log
+from git_calculator.util.git_util import get_repo_id
+from git_calculator.calculators.sqlite_lake.schema_metrics import (
     ALL_METRICS,
     DEFAULT_P75_STD_TOL,
     DEFAULT_SUM_AVG_TOL,
@@ -127,7 +123,7 @@ def _run_multi_repo_aggregate_validation(
     try:
         if detail_f:
             _detail(f"# started {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
-            _detail(f"# git_calculator_root={_repo_root_str}")
+            _detail(f"# git_calculator_root={REPO_ROOT}")
             _detail(f"# detail_log_path={detail_path}")
             _detail(f"# metric={METRIC_MULTI_REPO_AGGREGATE}")
             _detail(f"# repo_count={n} cwd={orig_cwd}")
@@ -397,7 +393,7 @@ def main() -> int:
     try:
         if detail_f:
             _detail(f"# started {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}")
-            _detail(f"# git_calculator_root={_repo_root_str}")
+            _detail(f"# git_calculator_root={REPO_ROOT}")
             _detail(f"# detail_log_path={detail_path}")
             _detail(f"# metric={args.metric}")
             _detail(f"# repo_count={n} cwd={orig_cwd}")

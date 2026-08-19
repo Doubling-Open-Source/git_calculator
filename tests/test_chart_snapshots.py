@@ -11,12 +11,12 @@ import os
 import pytest
 from PIL import Image
 
-from src.git_ir import git_log
-from src.calculators import change_failure_calculator as cfc
-from src.calculators import cycle_time_by_commits_calculator as cycle_calc
-from src.calculators.sqlite_lake import SqliteLake
-from src.util.toy_repo import ToyRepoCreator
-from src.visualizers.chart_generator import (
+from git_calculator.git_ir import git_log
+from git_calculator.calculators import change_failure_calculator as cfc
+from git_calculator.calculators import cycle_time_by_commits_calculator as cycle_calc
+from git_calculator.calculators.sqlite_lake import SqliteLake
+from git_calculator.util.toy_repo import ToyRepoCreator
+from git_calculator.visualizers.chart_generator import (
     plot_cycle_time,
     plot_cycle_time_from_db,
     plot_change_failure_rate,
@@ -76,7 +76,7 @@ def test_cycle_time_snapshot_python(snapshot_repo, image_snapshot, tmp_path):
 def test_cycle_time_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
     """SQL path: plot queries DB directly -> snapshot."""
     os.chdir(snapshot_repo)
-    from src.util.git_util import get_repo_id
+    from git_calculator.util.git_util import get_repo_id
 
     logs = git_log()
     repo_id = get_repo_id()
@@ -117,7 +117,7 @@ def test_change_failure_rate_snapshot_python(snapshot_repo, image_snapshot, tmp_
 def test_change_failure_rate_snapshot_sql(snapshot_repo, image_snapshot, tmp_path):
     """SQL path: plot queries DB directly -> snapshot."""
     os.chdir(snapshot_repo)
-    from src.util.git_util import get_repo_id
+    from git_calculator.util.git_util import get_repo_id
 
     logs = git_log()
     repo_id = get_repo_id()

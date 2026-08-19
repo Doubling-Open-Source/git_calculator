@@ -8,7 +8,7 @@ import tempfile
 import subprocess
 import os
 
-from src.calculators.sqlite_lake import SqliteLake, create_db
+from git_calculator.calculators.sqlite_lake import SqliteLake, create_db
 
 
 @pytest.fixture(scope="function")
@@ -44,9 +44,9 @@ def test_sqlite_lake_load_logs_requires_repo_id():
 
 
 def test_populate_commits_from_log_inserts_rows(temp_directory):
-    from src.git_ir import git_log
-    from src.util.git_util import get_repo_id
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.git_ir import git_log
+    from git_calculator.util.git_util import get_repo_id
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3, 4, 5])
@@ -66,9 +66,9 @@ def test_populate_commits_from_log_inserts_rows(temp_directory):
 
 
 def test_populate_commits_from_log_replaces_on_same_repo(temp_directory):
-    from src.git_ir import git_log
-    from src.util.git_util import get_repo_id
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.git_ir import git_log
+    from git_calculator.util.git_util import get_repo_id
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits_single_author([1, 2, 3])

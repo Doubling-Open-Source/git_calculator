@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from src.calculators.cycle_time_by_branches import BranchLine
+from git_calculator.calculators.cycle_time_by_branches import BranchLine
 
 class _T:
     __slots__ = ("_when",)

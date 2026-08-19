@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import warnings
 
-from src.calculators.sqlite_lake import SqliteLake
-from src.calculators.sqlite_lake import cycle_time_by_commits_calculator as cycle
+from git_calculator.calculators.sqlite_lake import SqliteLake
+from git_calculator.calculators.sqlite_lake import cycle_time_by_commits_calculator as cycle
 from tests.schema_metrics_fixtures import FakeCommit
 
 

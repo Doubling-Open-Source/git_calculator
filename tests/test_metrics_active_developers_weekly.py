@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_active_developers_weekly import (
     CanonicalActiveDevelopersWeekly,
     active_developers_weekly_canonical_from_logs,
     compare_active_developers_weekly,

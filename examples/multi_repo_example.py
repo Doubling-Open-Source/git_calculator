@@ -6,16 +6,12 @@ This example demonstrates how to use the git-calculator's multi-repository
 functionality to analyze and compare DORA metrics across multiple repositories.
 """
 
-import os
-import sys
 import json
+import os
 
-# Add src to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
-
-from multi_repo_manager import MultiRepoManager
-from calculators.multi_repo_calculator import MultiRepoCalculator
-from calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+from git_calculator.multi_repo_manager import MultiRepoManager
+from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
+from git_calculator.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
 
 
 def create_sample_repo_config():
@@ -168,9 +164,9 @@ def programmatic_example():
 
     print("Example programmatic usage:")
     print("""
-    from src.multi_repo_manager import MultiRepoManager
-    from src.calculators.multi_repo_calculator import MultiRepoCalculator
-    from src.calculators.multi_repo_chart_generator import MultiRepoChartGenerator
+    from git_calculator.multi_repo_manager import MultiRepoManager
+    from git_calculator.calculators.multi_repo_calculator import MultiRepoCalculator
+    from git_calculator.visualizers.multi_repo_chart_generator import MultiRepoChartGenerator
 
     # Initialize repository manager
     with MultiRepoManager() as repo_manager:

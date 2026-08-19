@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from src.calculators.sqlite_lake.commits_export_populate import period_week_and_monday_unix
+from git_calculator.calculators.sqlite_lake.commits_export_populate import period_week_and_monday_unix
 
 
 @pytest.fixture

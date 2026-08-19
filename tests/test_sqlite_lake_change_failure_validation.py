@@ -8,13 +8,13 @@ import tempfile
 import subprocess
 import os
 
-from src.git_ir import git_log
-from src.util.git_util import get_repo_id
-from src.calculators.change_failure_calculator import (
+from git_calculator.git_ir import git_log
+from git_calculator.util.git_util import get_repo_id
+from git_calculator.calculators.change_failure_calculator import (
     extract_commit_data,
     calculate_change_failure_rate,
 )
-from src.calculators.sqlite_lake import SqliteLake
+from git_calculator.calculators.sqlite_lake import SqliteLake
 
 
 @pytest.fixture(scope="function")
@@ -27,7 +27,7 @@ def temp_directory():
 
 def test_change_failure_rate_parity(temp_directory):
     """extract_commit_data + calculate_change_failure_rate (Python) vs calculate_change_failure_rate_sql return same (month, rate)."""
-    from src.util.toy_repo import ToyRepoCreator
+    from git_calculator.util.toy_repo import ToyRepoCreator
 
     trc = ToyRepoCreator(temp_directory)
     trc.create_custom_commits(

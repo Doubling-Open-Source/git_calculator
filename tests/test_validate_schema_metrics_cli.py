@@ -9,7 +9,7 @@ from unittest import mock
 
 import pytest
 
-from src.util.toy_repo import ToyRepoCreator
+from git_calculator.util.toy_repo import ToyRepoCreator
 
 
 @pytest.fixture(scope="function")
@@ -38,7 +38,7 @@ def test_cli_main_returns_one_when_validator_reports_error(temp_directory):
             temp_directory,
         ]
         with mock.patch(
-            "src.calculators.sqlite_lake.schema_metrics.validate_schema_metrics_for_logs",
+            "git_calculator.calculators.sqlite_lake.schema_metrics.validate_schema_metrics_for_logs",
             return_value="[cycle_time_monthly]\nsynthetic mismatch",
         ):
             spec = importlib.util.spec_from_file_location(
@@ -75,7 +75,7 @@ def test_cli_multi_repo_aggregate_passes_multiple_repo_dir_flags(temp_directory)
             d2,
         ]
         with mock.patch(
-            "src.calculators.sqlite_lake.schema_metrics.validate_multi_repo_aggregate_for_local_repo_paths",
+            "git_calculator.calculators.sqlite_lake.schema_metrics.validate_multi_repo_aggregate_for_local_repo_paths",
             return_value=(None, 0.0, 0.0, 0),
         ) as m:
             spec = importlib.util.spec_from_file_location(

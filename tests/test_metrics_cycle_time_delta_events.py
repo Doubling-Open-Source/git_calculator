@@ -6,7 +6,7 @@ import time
 
 import pytest
 
-from src.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_delta_events import (
+from git_calculator.calculators.sqlite_lake.schema_metrics.metrics_cycle_time_delta_events import (
     CanonicalCycleTimeDeltaEvent,
     DELTA_MINUTES_TOL,
     compare_cycle_time_delta_events,
