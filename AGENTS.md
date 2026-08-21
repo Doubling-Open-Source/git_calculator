@@ -14,8 +14,8 @@ The startup update script already provisions a Python virtualenv at `./venv` (de
 
 - Run the app (see `README.md` for full usage):
   - `git-calculator single /path/to/repo` — analyze one repo. Output CSVs/PNGs are written to a
-    `metrics/` directory in the current working directory (the `--output` value is logged but charts
-    land in `metrics/`).
+    `metrics/` directory inside the analyzed repository (e.g. `/path/to/repo/metrics/`), regardless
+    of the current working directory or the logged `--output` value.
   - `git-calculator config --create-sample` then `git-calculator multi --config repo_config.json`.
 - Test: `pytest tests/ -v`. Set `git config --global user.{name,email}` first — many tests build
   toy Git repos and fail without a Git identity (CI sets these).
